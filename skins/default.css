@@ -1,0 +1,152 @@
+.awmvideo {
+    line-height: 1.2;
+    font-size: 14.5px;
+}
+.awmvideo svg {
+    margin: 2.5px;
+}
+.awmvideo-video { /* keep video centered if container is larger (when fillSpace:true) */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.awmvideo-background { background-color: $background; }
+.awmvideo-totalTime:before {
+    content: '/';
+    margin: 0.2em;
+}
+.awmvideo-progress {
+    padding: 10px 0;
+    margin: -10px 0;
+    z-index: 2; /*keep above control bar*/
+}
+.awmvideo-progress > * {
+    height: 2px;
+    background-color: $progressBackground;
+    opacity: 0.95;
+    position: relative;
+}
+.awmvideo-novideo .awmvideo-progress > *,
+.awmvideo-progress:hover > * {
+    height: 10px;
+}
+
+.awmvideo-progress:not(:hover) > * {
+    transition: height 0.25s ease-in 0.5s;
+}
+.awmvideo-progress .bar {
+    height: inherit;
+    width: 0;
+    position: absolute;
+    border-right: inherit;
+    background-color: $accent;
+    z-index: 2; /*keep above buffer bar(s)*/
+    transition: width 0.2s;
+}
+.awmvideo-progress .buffer {
+    height: inherit;
+    width: 0;
+    position: absolute;
+    background-color: $semiFill;
+}
+.awmvideo-progress .bar:after {
+    content: '';
+    border: 5px solid $accent;
+    border-radius: 5px;
+    position: absolute;
+    right: -5px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.awmvideo-play[data-state="playing"] svg.play {
+    display: none;
+}
+.awmvideo-play[data-state="paused"] svg.pause {
+    display: none;
+}
+.awmvideo-main { align-items: center; }
+
+svg.icon.timeout {
+    display: inline-block;
+    height: 1em;
+    width: 1em;
+    margin: 0;
+    margin-right: 0.25em;
+    vertical-align: top;
+}
+
+.awm.largeplay, .awm.muted {
+    position: absolute;
+    opacity: 0.5;
+}
+.awm.largeplay {
+    top: 50%;
+    left: 0;
+    right: 0;
+    margin: auto;
+    transform: translateY(-50%);
+}
+.awm.muted {
+    top: 0;
+    right: 0;
+    margin: 1em;
+}
+.awmvideo-secondaryVideo {
+    z-index: 1;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 50%;
+    height: 50%;
+    max-width: fit-content;
+    max-height: fit-content;
+}
+.awmvideo-polling {
+    display: inline-block;
+    position: relative;
+    width: 25px;
+    height: 25px;
+}
+.awmvideo-polling svg.icon.loading {
+    z-index: 0;
+    opacity: 1;
+}
+.awmvideo:not([data-hide-submenu]) .awmvideo-hoverWindow:hover >svg.icon.settings .fill,
+.awmvideo[data-show-submenu] svg.icon.settings .fill,
+
+.awmvideo[data-fullscreen] svg.icon.fullscreen .fill {
+    fill: $accent;
+}
+.awmvideo[data-show-submenu] .awmvideo-submenu {
+    right: 5px;
+}
+.awmvideo[data-hide-submenu] .awmvideo-submenu {
+    right: -1000px !important;
+}
+.awmvideo[data-show-submenu] .awmvideo-controls {
+    bottom: 0;
+}
+.awmvideo-error[data-passive] {
+    bottom: auto;
+    left: auto;
+    height: auto;
+    margin: 0.5em;
+    padding: 0.5em;
+}
+.awmvideo-error[data-passive] .message {
+    max-width: none;
+}
+.awmvideo-error .awmvideo-buttoncontainer {
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: center;
+}
+.awmvideo-error .awmvideo-buttoncontainer .awmvideo-button {
+    white-space: nowrap;
+}
+.browser-ie .awm.icon.loading {
+    animation: awmvideo-spin 1.5s infinite linear;
+    transform-origin: 50% 50%;
+}
+.browser-ie .awm.icon.loading .spin { animation: none; }

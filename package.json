@@ -1,0 +1,17 @@
+{
+  "name": "awm-player",
+  "version": "1.0.0",
+  "description": "AwmPlayer",
+  "scripts": {
+    "build": "./build.sh",
+    "lint": "eslint ./dist/player.js",
+    "minimize": "./minimize.sh"
+  },
+  "dependencies": {
+    "clean-css-cli": "^4.2.1",
+    "terser": "^3.17.0"
+  },
+  "devDependencies": {
+    "eslint": "^7.28.0"
+  }
+}

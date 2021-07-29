@@ -1,0 +1,108 @@
+.awmvideo-log {
+    margin: 0.5em 0;
+}
+.awmvideo-log .logs {
+    max-height: 10em;
+    min-height: 5em;
+    width: 100%;
+    padding: 0.2em 0;
+    padding-right: 1em; /*for scrollbar*/
+    overflow-y: auto;
+    overflow-x: hidden;
+    font-size: 0.9em;
+}
+.awmvideo-log .logs table td {
+    vertical-align: top;
+    padding: 0;
+}
+.awmvideo-log .logs .entry .message {
+    margin: 0 0.2em;
+}
+.awmvideo-log .logs .entry.type-error {
+    color: $accent;
+}
+.awmvideo-log .logs .timestamp,
+.awmvideo-log .logs .counter {
+    color: $semiFill;
+}
+.awmvideo-log .logs .timestamp:before { content: '['; }
+.awmvideo-log .logs .timestamp:after { content: ']'; }
+.awmvideo-log .logs .counter:before { content: '('; }
+.awmvideo-log .logs .counter:after { content: '\00d7)'; }
+
+.awmvideo-devbuttons { font-size: 0.9em; }
+.awmvideo-devbuttons button {
+    font-size: 0.8em;
+    margin: 0.1em;
+    padding: 0.2em 0.4em;
+}
+.awmvideo-forceSource > span,
+.awmvideo-forceType > span,
+.awmvideo-forcePlayer > span { display: inline-block; width: 7em; }
+.awmvideo-forceSource > select,
+.awmvideo-forceType > select,
+.awmvideo-forcePlayer > select {
+    width: 15em;
+    min-width: auto;
+}
+.awmvideo-devcontrols {
+    margin: 0.5em 0;
+}
+
+.awmvideo-decodingIssues > * {
+    display: flex;
+    width: 50%;
+    max-width: 20em;
+    flex-flow: row nowrap;
+    align-items: flex-end;
+    justify-content: space-between;
+}
+.awmvideo-decodingIssues > * > :last-child {
+    margin-right: 0.5em;
+}
+.awmvideo-decodingIssues {
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: space-between;
+}
+.awmvideo-decodingIssues label {
+    position: relative;
+}
+.awmvideo-decodingIssues label .awmvideo-description {
+    font-size: 0.9em;
+}
+.awmvideo-decodingIssues label .value {
+    font-size: 0.8em;
+}
+svg.icon.graph {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 6em;
+}
+select {
+    border-radius: 0;
+}
+input[type="checkbox"] {
+    margin: 0;
+    margin-right: 0.2em;
+    border: 1px solid $semiFill;
+    border-radius: 0;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    -ms-appearance: none;
+    appearance: none;
+    width: 0.8em;
+    height: 0.8em;
+    color: inherit;
+    position: relative;
+    cursor: pointer;
+}
+input[type="checkbox"]:checked:after {
+    content: "\2713";
+    position: absolute;
+    bottom: -0.2em;
+    left: 0;
+    font-size: 1.2em;
+}
