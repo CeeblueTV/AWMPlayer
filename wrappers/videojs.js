@@ -31,6 +31,7 @@ var p = awmplayers.videojs.player;
 p.prototype = new AwmPlayer();
 p.prototype.build = function (AwmVideo, callback) {
   var me = this; //to allow nested functions to access the player class itself
+  me.name = 'videojs'
 
   var ele;
 

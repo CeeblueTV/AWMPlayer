@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>AWM-player example</title>
+  <meta charset="utf-8">
+  <meta content="13.08.2021~1" name="version">
+  <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport">
+  <style>
+      html {
+          margin: 0;
+          padding: 0;
+          display: table;
+          width: 100%;
+          height: 100%;
+      }
+
+      body {
+          color: white;
+          background: #0f0f0f;
+          margin: 0;
+          padding: 0;
+          display: table-cell;
+          vertical-align: middle;
+          text-align: center
+      }
+
+      body > div > div {
+          text-align: left;
+      }
+  </style>
+</head>
+<body>
+<span id="protocol-caption" style="color: #DDDDDD">WebRTC</span>
+<div class="awmvideo" id="adaptive-video-player"></div>
+
+<script src="../dist/player.js"></script>
+<script>
+
+  AwmSkins.default.css.skin = '../dist/skins/default.css';
+  AwmSkins.dev.css.skin = '../dist/skins/dev.css';
+
+  const protocolCaptionElement = document.getElementById('protocol-caption');
+  const awmElement = document.getElementById('adaptive-video-player');
+
+  const PROTOCOL_LABELS = {
+    'webrtc': 'WebRTC',
+    'ws/video/mp4': 'MP4ovWS',
+    'html5/video/mp4': 'MP4',
+    'html5/application/vnd.apple.mpegurl': 'HLS'
+  };
+
+  const protocolName = 'protocol_name';
+
+  // Event that fires when protocol changed. Return new protocol name
+  awmElement.addEventListener(protocolName, function (event) {
+    protocolCaptionElement.innerText = PROTOCOL_LABELS[event.message]
+  });
+  // Logging setup (optional). Event that fires when something were logged
+  awmElement.addEventListener('log', function (log) {
+    console.log('>', log.message);
+  });
+  // Event that fires when got info from stream
+  awmElement.addEventListener('haveStreamInfo', function (event) {
+    console.log('Event: StreamInfo (', JSON.stringify(event.message), ')');
+  });
+
+  let options = {
+    //The host from which the stream will be received
+    host: 'https://sea.ceeblue.tv:4433/',
+    // Target element in which player would be placed
+    target: awmElement,
+    // Enable autoplay
+    autoplay: true,
+    // Skin: 'dev',  <- add this to enable debugging mode
+    AwmVideoObject: {},
+    // Protocols and it's priority
+    forcePriority: {
+      source: [
+        ['type', ['webrtc', 'ws/video/mp4', 'html5/video/mp4', 'html5/application/vnd.apple.mpegurl']],
+      ]
+    },
+    // Observe stream and change quality/protocol if needed.
+    monitor: {
+      // Here you can add fields to override them in monitor (default AdjustableMonitor monitor). If any function would be here it just replace AdjustableMonitor;
+      protocolName, // Override event's name that shoots when protocol changed
+    }
+  }
+
+  //Name of stream that would be played
+  const streamName = 'out+219e8dc8-705a-44cd-9bc7-361f513a1f78';
+  awmPlay(streamName, options);
+</script>
+</body>
+</html>

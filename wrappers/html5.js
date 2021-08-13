@@ -101,6 +101,8 @@ awmplayers.html5 = {
 var p = awmplayers.html5.player;
 p.prototype = new AwmPlayer();
 p.prototype.build = function (AwmVideo, callback) {
+  AwmVideo.player.name = 'html5'
+
   var shortmime = AwmVideo.source.type.split("/");
   shortmime.shift();
   var video = document.createElement("video");
