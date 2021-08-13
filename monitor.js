@@ -37,7 +37,7 @@ if (!AdjustableMonitor) {
 
       this.vars.active = true;
 
-      AwmUtil.event.send(this.PROTOCOL_CHANGE_EVENT, this.AwmVideo.source?.type, this.AwmVideo.options.target)
+      AwmUtil.event.send(this.PROTOCOL_CHANGE_EVENT, this.AwmVideo.source.type, this.AwmVideo.options.target)
 
       this.repeat();
     },
