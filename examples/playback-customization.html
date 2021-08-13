@@ -30,7 +30,7 @@
   </style>
 </head>
 <body>
-<span id="protocol-caption" style="color: #DDDDDD">WebRTC</span>
+<span id="protocol-caption" style="color: #DDDDDD"></span>
 <div class="awmvideo" id="adaptive-video-player"></div>
 
 <script src="../dist/player.js"></script>
@@ -49,10 +49,10 @@
     'html5/application/vnd.apple.mpegurl': 'HLS'
   };
 
-  const protocolName = 'protocol_name';
+  const PROTOCOL_CHANGE_EVENT = 'protocol_name';
 
   // Event that fires when protocol changed. Return new protocol name
-  awmElement.addEventListener(protocolName, function (event) {
+  awmElement.addEventListener(PROTOCOL_CHANGE_EVENT, function (event) {
     protocolCaptionElement.innerText = PROTOCOL_LABELS[event.message]
   });
   // Logging setup (optional). Event that fires when something were logged
@@ -82,7 +82,7 @@
     // Observe stream and change quality/protocol if needed.
     monitor: {
       // Here you can add fields to override them in monitor (default AdjustableMonitor monitor). If any function would be here it just replace AdjustableMonitor;
-      protocolName, // Override event's name that shoots when protocol changed
+      PROTOCOL_CHANGE_EVENT, // Override event's name that shoots when protocol initialized or changed
     }
   }
 
