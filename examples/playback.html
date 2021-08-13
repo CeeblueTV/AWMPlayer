@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>AWM-player example</title>
+  <meta charset="utf-8">
+  <meta content="13.08.2021~1" name="version">
+  <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport">
+  <style>
+      html {
+          margin: 0;
+          padding: 0;
+          display: table;
+          width: 100%;
+          height: 100%;
+      }
+
+      body {
+          color: white;
+          background: #0f0f0f;
+          margin: 0;
+          padding: 0;
+          display: table-cell;
+          vertical-align: middle;
+          text-align: center
+      }
+
+      body > div > div {
+          text-align: left;
+      }
+  </style>
+</head>
+<body>
+<div class="awmvideo" id="adaptive-video-player">
+</div>
+<script src="../dist/player.js"></script>
+<script>
+  startPlayback();
+
+  function startPlayback() {
+    AwmSkins.default.css.skin = '../dist/skins/default.css';
+    AwmSkins.dev.css.skin = '../dist/skins/dev.css';
+
+    const awmElement = document.getElementById('adaptive-video-player');
+
+    let options = {
+      host: 'https://sea.ceeblue.tv:4433/',
+      target: awmElement,
+      autoplay: true,
+      AwmVideoObject: {},
+      forcePriority: {
+        source: [
+          ['type', ['webrtc', 'html5/video/mp4']],
+        ]
+      }
+    }
+
+    const streamName = 'out+219e8dc8-705a-44cd-9bc7-361f513a1f78';
+
+    awmPlay(streamName, options);
+  }
+</script>
+
+</body>
+</html>

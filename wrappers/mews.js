@@ -108,6 +108,7 @@ p.prototype.build = function (AwmVideo, callback) {
   };
 
   var player = this;
+  player.name = "mews";
   //player.debugging = true;
 
   //this function is called both when the websocket is ready and the media source is ready - both should be open to proceed

@@ -138,7 +138,7 @@ function AwmVideo(streamName, options) {
       AwmVideo.log("Forcing source " + options.forceSource + ": " + sources[0].type + " @ " + sources[0].url);
     } else if (options.forceType) {
       sources = AwmVideo.info.source.filter(function (d) {
-        return (d.type == options.forceType);
+        return (d.type === options.forceType);
       });
       AwmVideo.log("Forcing type " + options.forceType);
     } else {
@@ -448,55 +448,43 @@ function AwmVideo(streamName, options) {
             AwmVideo: AwmVideo,      // Added here so that the other functions can use it. Do not override it.
             delay: 1,                // The amount of seconds between measurements.
             averagingSteps: 20,      // The amount of measurements that are saved.
+            vars: {
+              values: [],
+              score: false,
+              active: false
+            },
             threshold: function () { // Returns the score threshold below which the "action" should be taken
               if (this.AwmVideo.source.type == "webrtc") {
                 return 0.95;
               }
               return 0.75;
             },
+
             init: function () {             //starts the monitor and defines the basic shape of the procedure it follows. This is called when the stream should begin playback.
 
-              if ((this.vars) && (this.vars.active)) {
+              if (this.vars.active) {
                 return;
               } //it's already running, don't bother
               this.AwmVideo.log("Enabling monitor");
 
-              this.vars = {
-                values: [],
-                score: false,
-                active: true
-              };
 
-              var monitor = this;
+              this.AwmVideo.monitor.vars.active = true;
 
-              //the procedure to follow
-              function repeat() {
-                if ((monitor.vars) && (monitor.vars.active)) {
-                  monitor.vars.timer = monitor.AwmVideo.timers.start(function () {
-
-                    var score = monitor.calcScore();
-                    if (score !== false) {
-                      if (monitor.check(score)) {
-                        monitor.action();
-                      }
-                    }
-                    repeat();
-                  }, monitor.delay * 1e3);
-                }
-              }
-
-              repeat();
+              this.repeat()
 
             },
             destroy: function () {          //stops the monitor. This is called when the stream has ended or has been paused by the viewer.
 
-              if ((!this.vars) || (!this.vars.active)) {
+              if (!this.vars.active) {
                 return;
               } //it's not running, don't bother]
 
               this.AwmVideo.log("Disabling monitor");
               this.AwmVideo.timers.stop(this.vars.timer);
-              delete this.vars;
+
+              this.vars.timer = null;
+              this.vars.values = [];
+              this.vars.active = false;
             },
             reset: function () {            //clears the monitor’s history. This is called when the history becomes invalid because of a seek or change in the playback rate.
 
@@ -580,14 +568,35 @@ function AwmVideo(streamName, options) {
                 ignore: true,
                 type: "poor_playback"
               });
-            }
+            },
+            repeat: function () {
+              if ((this.vars) && (this.vars.active)) {
+                this.vars.timer = this.AwmVideo.timers.start(() => {
+
+                  var score = this.calcScore();
+                  if (score !== false) {
+                    if (this.check(score)) {
+                      this.action();
+                    }
+                  }
+                  this.repeat();
+                }, this.delay * 1e3);
+              }
+            },
           };
 
           var events;
           //overwrite (some?) monitoring functions/values with custom ones if specified
           if ("monitor" in AwmVideo.options) {
             AwmVideo.monitor.default = AwmUtil.object.extend({}, AwmVideo.monitor);
-            AwmUtil.object.extend(AwmVideo.monitor, AwmVideo.options.monitor);
+
+            if (Object.getOwnPropertyNames(AwmVideo.options.monitor).filter(item => typeof AwmVideo.options.monitor[item] === 'function').length === 0) {
+              AwmUtil.object.extend(AwmVideo.monitor, AdjustableMonitor);
+            }
+
+            if (AwmVideo.options.monitor) {
+              AwmUtil.object.extend(AwmVideo.monitor, AwmVideo.options.monitor);
+            }
           }
 
           // Enable
@@ -636,14 +645,14 @@ function AwmVideo(streamName, options) {
         ];
         for (var i in events) {
           AwmUtil.event.addListener(AwmVideo.video, events[i], function (e) {
-            AwmVideo.log("Player event fired: " + e.type);
+            AwmVideo.log(AwmVideo.player.name + " player event fired: " + e.type);
           });
         }
         AwmUtil.event.addListener(AwmVideo.video, "error", function (e) { //Needed. Commented console.log below
           var msg;
           if (
-            ("player" in AwmVideo) && ("api" in AwmVideo.player)
-            && ("error" in AwmVideo.player.api) && (AwmVideo.player.api.error)
+              ("player" in AwmVideo) && ("api" in AwmVideo.player)
+              && ("error" in AwmVideo.player.api) && (AwmVideo.player.api.error)
           ) {
             if ("message" in AwmVideo.player.api.error) {
               msg = AwmVideo.player.api.error.message;
@@ -917,6 +926,8 @@ function AwmVideo(streamName, options) {
                   type: i,
                   trackid: setTracks[i]
                 }, AwmVideo.video);
+
+                this.videoTrackId = setTracks[i];
               }
             }
           }

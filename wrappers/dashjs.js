@@ -32,6 +32,7 @@ var p = awmplayers.dashjs.player;
 p.prototype = new AwmPlayer();
 p.prototype.build = function (AwmVideo, callback) {
   var me = this;
+  me.name = 'dashjs';
 
   this.onDashLoad = function () {
     if (AwmVideo.destroyed) {

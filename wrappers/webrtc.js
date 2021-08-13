@@ -26,6 +26,7 @@ var p = awmplayers.webrtc.player;
 p.prototype = new AwmPlayer();
 p.prototype.build = function (AwmVideo, callback) {
   var me = this;
+  me.name = 'webrtc';
 
   if ((typeof WebRTCBrowserEqualizerLoaded == "undefined") || (!WebRTCBrowserEqualizerLoaded)) {
     //load it
@@ -287,7 +288,7 @@ p.prototype.build = function (AwmVideo, callback) {
           }
         };
         thisWebRTCPlayer.peerConn.onconnectionstatechange = function () {
-          if (this.destroyed) {
+          if (AwmVideo.destroyed) {
             return;
           } //the player doesn't exist any more
           switch (this.connectionState) {
@@ -309,7 +310,7 @@ p.prototype.build = function (AwmVideo, callback) {
           }
         };
         thisWebRTCPlayer.peerConn.oniceconnectionstatechange = function () {
-          if (this.destroyed) {
+          if (AwmVideo.destroyed) {
             return;
           } //the player doesn't exist any more
           switch (this.iceConnectionState) {
@@ -758,6 +759,7 @@ p.prototype.build = function (AwmVideo, callback) {
     try {
       me.webrtc.stop();
       me.webrtc.signaling.ws.close();
+      me.webrtc.peerConn.close();
     } catch (e) {
     }
   };
