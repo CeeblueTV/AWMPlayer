@@ -11,7 +11,7 @@ PLAYER_PATH="$DIST_PATH/player.js"
 VERSION_DATE_LINE="/*${1}~${2}*/"
 
 #adding version&date comment to start of file
-echo "/*${1}~${2}*/" | tee $PLAYER_PATH
+echo "$VERSION_DATE_LINE" | tee $PLAYER_PATH
 
 cat "./util.js"             >> $PLAYER_PATH
 cat "./skins.js"            >> $PLAYER_PATH
