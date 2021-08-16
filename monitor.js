@@ -14,6 +14,7 @@ if (!AdjustableMonitor) {
       'html5/application/vnd.apple.mpegurl': 6.0
     },
     PROTOCOL_CHANGE_EVENT: 'protocol_name',
+    SCORE_UPDATE_EVENT: 'score_updated',
 
     qualitySwitchUpTimeout: 0.0,
     qualitySwitchPreviousMode: null,

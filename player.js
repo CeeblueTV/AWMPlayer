@@ -517,6 +517,14 @@ function AwmVideo(streamName, options) {
               score = Math.max(score, list[list.length - 1].score);
 
               this.vars.score = score;
+
+              let scoreUpdateEventName = AdjustableMonitor.SCORE_UPDATE_EVENT;
+              if (this.SCORE_UPDATE_EVENT) {
+                scoreUpdateEventName = this.SCORE_UPDATE_EVENT
+              }
+
+              AwmUtil.event.send(scoreUpdateEventName, score, this.AwmVideo.options.target);
+
               return score;
             },
             valueToScore: function (a, b) {
