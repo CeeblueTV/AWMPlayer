@@ -17,6 +17,7 @@ cat "./util.js"             >> $PLAYER_PATH
 cat "./skins.js"            >> $PLAYER_PATH
 cat "./controls.js"         >> $PLAYER_PATH
 cat "./monitors.js"          >> $PLAYER_PATH
+cat "./metrics.js"          >> $PLAYER_PATH
 cat "./player.js"           >> $PLAYER_PATH
 cat "./wrappers/html5.js"   >> $PLAYER_PATH
 cat "./wrappers/videojs.js" >> $PLAYER_PATH

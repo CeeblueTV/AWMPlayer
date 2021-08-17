@@ -702,6 +702,11 @@ function AwmVideo(streamName, options) {
                 //actually switch to the new source url
                 this.setSourceParams(newurl, usetracks);
 
+                AwmUtil.event.send("playerUpdate_trackChanged", {
+                  type: Object.keys(usetracks)[0],
+                  trackid: usetracks[Object.keys(usetracks)[0]]
+                }, AwmVideo.video);
+
                 //restore video position
                 if (AwmVideo.info.type != "live") {
                   var f = function () {
@@ -801,6 +806,9 @@ function AwmVideo(streamName, options) {
 
         AwmUtil.event.send("initialized", null, options.target);
         AwmVideo.log("Initialized");
+
+        Metrics.start(AwmVideo, AwmVideo.monitor.METRICS_WS_URL, AwmVideo.stream.split('+')[1]);
+
         if (AwmVideo.options.callback) {
           options.callback(AwmVideo);
         }
