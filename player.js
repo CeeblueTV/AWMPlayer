@@ -448,6 +448,9 @@ function AwmVideo(streamName, options) {
             AwmVideo: AwmVideo,      // Added here so that the other functions can use it. Do not override it.
             delay: 1,                // The amount of seconds between measurements.
             averagingSteps: 20,      // The amount of measurements that are saved.
+            SCORE_UPDATE_EVENT: 'score_updated',
+            PROTOCOL_CHANGE_EVENT: 'protocol_changed',
+            METRICS_WS_URL: "ws://localhost:8080/",
             vars: {
               values: [],
               score: false,
@@ -518,12 +521,7 @@ function AwmVideo(streamName, options) {
 
               this.vars.score = score;
 
-              let scoreUpdateEventName = AdjustableMonitor.SCORE_UPDATE_EVENT;
-              if (this.SCORE_UPDATE_EVENT) {
-                scoreUpdateEventName = this.SCORE_UPDATE_EVENT
-              }
-
-              AwmUtil.event.send(scoreUpdateEventName, score, this.AwmVideo.options.target);
+              AwmUtil.event.send(this.SCORE_UPDATE_EVENT, score, this.AwmVideo.options.target);
 
               return score;
             },
@@ -849,6 +847,11 @@ function AwmVideo(streamName, options) {
                 //actually switch to the new source url
                 this.setSourceParams(newurl, usetracks);
 
+                AwmUtil.event.send("playerUpdate_trackChanged", {
+                  type: Object.keys(usetracks)[0],
+                  trackid: usetracks[Object.keys(usetracks)[0]]
+                }, AwmVideo.video);
+
                 //restore video position
                 if (AwmVideo.info.type != "live") {
                   var f = function () {
@@ -948,6 +951,9 @@ function AwmVideo(streamName, options) {
 
         AwmUtil.event.send("initialized", null, options.target);
         AwmVideo.log("Initialized");
+
+        Metrics.start(AwmVideo, AwmVideo.monitor.METRICS_WS_URL, AwmVideo.stream.split('+')[1]);
+
         if (AwmVideo.options.callback) {
           options.callback(AwmVideo);
         }

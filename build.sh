@@ -16,6 +16,7 @@ echo "$VERSION_DATE_LINE" | tee $PLAYER_PATH
 cat "./util.js"             >> $PLAYER_PATH
 cat "./skins.js"            >> $PLAYER_PATH
 cat "./controls.js"         >> $PLAYER_PATH
+cat "./metrics.js"          >> $PLAYER_PATH
 cat "./monitor.js"          >> $PLAYER_PATH
 cat "./player.js"           >> $PLAYER_PATH
 cat "./wrappers/html5.js"   >> $PLAYER_PATH
