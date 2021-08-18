@@ -1,17 +1,17 @@
-if (!Metrics) {
-  var Metrics = {
-    signallingUrl: '',
+function getAwmMetric(AwmVideo, signallingUrl, streamId) {
+  return {
+    signallingUrl: signallingUrl,
     statistic: {
-      streamId: null,
+      streamId: streamId,
       score: {date: Date.now(), value: 0},
       protocol: {date: Date.now(), value: null},
     },
     websocket: null,
-    AwmVideo: null,
+    AwmVideo: AwmVideo,
     statisticSendingInterval: 1000,
     listeners: {scoreListener: null, protocolListener: null},
 
-    start(AwmVideo, signallingUrl, streamId) {
+    start() {
       if (!AwmVideo && !this.AwmVideo) {
         throw "AwmVideo is required";
       }
@@ -23,13 +23,7 @@ if (!Metrics) {
         return;
       }
 
-      this.signallingUrl = signallingUrl ? signallingUrl : this.signallingUrl;
-
       this.websocket = new WebSocket(this.signallingUrl);
-
-      this.AwmVideo = AwmVideo;
-
-      this.statistic.streamId = streamId;
 
       this.addListeners()
 
