@@ -1,15 +1,19 @@
-function getAwmMetric(AwmVideo, signallingUrl, streamId) {
+function getAwmMetric(AwmVideo, statisticCollectorUrl, streamId) {
   return {
-    signallingUrl: signallingUrl,
+    AwmVideo: AwmVideo,
+    statisticCollectorUrl: statisticCollectorUrl,
+    websocket: null,
+
     statistic: {
       streamId: streamId,
-      score: {date: Date.now(), value: 0},
-      protocol: {date: Date.now(), value: null},
+      score: {value: 0},
+      protocol: {value: null},
     },
-    websocket: null,
-    AwmVideo: AwmVideo,
-    statisticSendingInterval: 1000,
+
     listeners: {scoreListener: null, protocolListener: null},
+
+    sendingPeriod: 1000,
+    statisticSendingInterval: null,
 
     start() {
       if (!AwmVideo && !this.AwmVideo) {
@@ -23,27 +27,25 @@ function getAwmMetric(AwmVideo, signallingUrl, streamId) {
         return;
       }
 
-      this.websocket = new WebSocket(this.signallingUrl);
+      this.websocket = new WebSocket(this.statisticCollectorUrl);
 
       this.addListeners()
 
-      this.sendStatistic();
+      this.startStatisticSendingInterval();
     },
 
     addListeners() {
       this.listeners.scoreListener = AwmUtil.event.addListener(this.AwmVideo.options.target, this.AwmVideo.monitor.SCORE_UPDATE_EVENT, ({message}) => {
-        this.statistic.score.date = Date.now();
         this.statistic.score.value = message;
       });
 
       this.listeners.protocolListener = AwmUtil.event.addListener(this.AwmVideo.options.target, this.AwmVideo.monitor.PROTOCOL_CHANGE_EVENT, ({message}) => {
-        this.statistic.protocol.date = Date.now();
         this.statistic.protocol.value = message;
       });
     },
 
-    sendStatistic() {
-      setInterval(() => {
+    startStatisticSendingInterval() {
+      this.statisticSendingInterval = setInterval(() => {
         if (this.websocket.readyState !== WebSocket.OPEN) {
           return;
         }
@@ -58,10 +60,12 @@ function getAwmMetric(AwmVideo, signallingUrl, streamId) {
         AwmUtil.event.removeListener(listener);
       }
 
+      clearTimeout(this.statisticSendingInterval);
+
       this.websocket.close();
     },
 
-    setStatisticInterval(statisticSendingInterval) {
+    setStatisticPeriod(statisticSendingInterval) {
       this.statisticSendingInterval = statisticSendingInterval;
     }
   }
