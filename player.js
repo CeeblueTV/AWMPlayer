@@ -39,7 +39,8 @@ function AwmVideo(streamName, options) {
     height: false,        // No set height
     maxwidth: false,      // No max width (apart from targets dimensions)
     maxheight: false,     // No max height (apart from targets dimensions)
-    AwmVideoObject: false // No reference object is passed
+    AwmVideoObject: false, // No reference object is passed
+    metrics: false // No statistic
   }, options);
 
   if (options.host) {
@@ -807,7 +808,13 @@ function AwmVideo(streamName, options) {
         AwmUtil.event.send("initialized", null, options.target);
         AwmVideo.log("Initialized");
 
-        Metrics.start(AwmVideo, AwmVideo.monitor.METRICS_WS_URL, AwmVideo.stream.split('+')[1]);
+        if (AwmVideo.monitor.metrics) {
+          try {
+            Metrics.start(AwmVideo, AwmVideo.monitor.METRICS_WS_URL, AwmVideo.stream.split('+')[1]);
+          } catch (e) {
+            AwmVideo.log("Couldn't start statistic module" + e.message);
+          }
+        }
 
         if (AwmVideo.options.callback) {
           options.callback(AwmVideo);
