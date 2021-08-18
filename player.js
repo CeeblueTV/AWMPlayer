@@ -810,11 +810,13 @@ function AwmVideo(streamName, options) {
 
 
         try {
-          if (!AwmVideo.monitor.metrics) {
-            AwmVideo.monitor.metrics = getAwmMetric(AwmVideo, AwmVideo.monitor.METRICS_WS_URL, AwmVideo.stream.split('+')[1]);
+          if (AwmVideo.metrics || AwmVideo.options.metrics) {
+            AwmVideo.metrics = AwmUtil.object.extend({}, AwmVideo.options.metrics);
+            AwmVideo.metrics = AwmUtil.object.extend(getAwmMetric(AwmVideo, AwmVideo.stream.split('+')[1]), AwmVideo.metrics);
+
+            AwmVideo.metrics.start();
           }
 
-          AwmVideo.monitor.metrics.start();
         } catch (e) {
           AwmVideo.log("Couldn't start statistic module" + e.message);
         }
@@ -1139,6 +1141,9 @@ function AwmVideo(streamName, options) {
       delete this.container;
     }
     AwmUtil.empty(this.options.target);
+
+    AwmVideo.metrics.stop();
+
     delete this.video;
 
   };

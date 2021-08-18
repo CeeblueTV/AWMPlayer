@@ -1,13 +1,13 @@
-function getAwmMetric(AwmVideo, statisticCollectorUrl, streamId) {
+function getAwmMetric(AwmVideo, streamId) {
   return {
     AwmVideo: AwmVideo,
-    statisticCollectorUrl: statisticCollectorUrl,
+    METRICS_URL: "ws://localhost:8081/",
     websocket: null,
 
     statistic: {
       streamId: streamId,
-      score: {value: 0},
-      protocol: {value: null},
+      score: 0,
+      protocol: null,
     },
 
     listeners: {scoreListener: null, protocolListener: null},
@@ -27,7 +27,7 @@ function getAwmMetric(AwmVideo, statisticCollectorUrl, streamId) {
         return;
       }
 
-      this.websocket = new WebSocket(this.statisticCollectorUrl);
+      this.websocket = new WebSocket(this.METRICS_URL);
 
       this.addListeners()
 
@@ -36,11 +36,11 @@ function getAwmMetric(AwmVideo, statisticCollectorUrl, streamId) {
 
     addListeners() {
       this.listeners.scoreListener = AwmUtil.event.addListener(this.AwmVideo.options.target, this.AwmVideo.monitor.SCORE_UPDATE_EVENT, ({message}) => {
-        this.statistic.score.value = message;
+        this.statistic.score = message;
       });
 
       this.listeners.protocolListener = AwmUtil.event.addListener(this.AwmVideo.options.target, this.AwmVideo.monitor.PROTOCOL_CHANGE_EVENT, ({message}) => {
-        this.statistic.protocol.value = message;
+        this.statistic.protocol = message;
       });
     },
 
@@ -52,7 +52,7 @@ function getAwmMetric(AwmVideo, statisticCollectorUrl, streamId) {
 
         this.websocket.send(JSON.stringify(this.statistic));
 
-      }, this.statisticSendingInterval);
+      }, this.sendingPeriod);
     },
 
     stop() {
