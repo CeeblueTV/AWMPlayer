@@ -1,7 +1,7 @@
 function getAwmMetric(AwmVideo, streamId) {
   return {
     AwmVideo: AwmVideo,
-    METRICS_URL: "ws://localhost:8081/",
+    METRICS_URL: "wss://ceeblue.tv/stats/ws/viewer/awm",
     websocket: null,
 
     statistic: {
