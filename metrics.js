@@ -12,9 +12,6 @@ function getAwmMetric(AwmVideo, streamId) {
 
     listeners: {scoreListener: null, protocolListener: null},
 
-    sendingPeriod: 1000,
-    statisticSendingInterval: null,
-
     start() {
       if (!AwmVideo && !this.AwmVideo) {
         throw "AwmVideo is required";
@@ -30,29 +27,26 @@ function getAwmMetric(AwmVideo, streamId) {
       this.websocket = new WebSocket(this.METRICS_URL);
 
       this.addListeners()
-
-      this.startStatisticSendingInterval();
     },
 
     addListeners() {
       this.listeners.scoreListener = AwmUtil.event.addListener(this.AwmVideo.options.target, this.AwmVideo.monitor.SCORE_UPDATE_EVENT, ({message}) => {
         this.statistic.score = message;
+        this.send();
       });
 
       this.listeners.protocolListener = AwmUtil.event.addListener(this.AwmVideo.options.target, this.AwmVideo.monitor.PROTOCOL_CHANGE_EVENT, ({message}) => {
-        this.statistic.protocol = message;
+        this.statistic.protocol = AwmUtil.format.mime2human(message);
+        this.send();
       });
     },
 
-    startStatisticSendingInterval() {
-      this.statisticSendingInterval = setInterval(() => {
-        if (this.websocket.readyState !== WebSocket.OPEN) {
-          return;
+    send() {
+      setTimeout(() => {
+        if (this.websocket.readyState === WebSocket.OPEN) {
+          this.websocket.send(JSON.stringify(this.statistic));
         }
-
-        this.websocket.send(JSON.stringify(this.statistic));
-
-      }, this.sendingPeriod);
+      }, 0);
     },
 
     stop() {
@@ -60,13 +54,7 @@ function getAwmMetric(AwmVideo, streamId) {
         AwmUtil.event.removeListener(listener);
       }
 
-      clearTimeout(this.statisticSendingInterval);
-
       this.websocket.close();
     },
-
-    setStatisticPeriod(statisticSendingInterval) {
-      this.statisticSendingInterval = statisticSendingInterval;
-    }
   }
 }

@@ -812,7 +812,7 @@ function AwmVideo(streamName, options) {
         try {
           if (AwmVideo.metrics || AwmVideo.options.metrics) {
             AwmVideo.metrics = AwmUtil.object.extend({}, AwmVideo.options.metrics);
-            AwmVideo.metrics = AwmUtil.object.extend(getAwmMetric(AwmVideo, AwmVideo.stream.split('+')[1]), AwmVideo.metrics);
+            AwmVideo.metrics = AwmUtil.object.extend(getAwmMetric(AwmVideo, AwmVideo.stream), AwmVideo.metrics);
 
             AwmVideo.metrics.start();
           }
