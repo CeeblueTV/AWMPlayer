@@ -1,6 +1,6 @@
 {
   "name": "awm-player",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "AwmPlayer",
   "scripts": {
     "build": "./build.sh $npm_package_version $(date +%Y-%m-%d-%H:%M:%S)",

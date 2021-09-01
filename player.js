@@ -39,7 +39,8 @@ function AwmVideo(streamName, options) {
     height: false,        // No set height
     maxwidth: false,      // No max width (apart from targets dimensions)
     maxheight: false,     // No max height (apart from targets dimensions)
-    AwmVideoObject: false // No reference object is passed
+    AwmVideoObject: false, // No reference object is passed
+    metrics: false // No metrics module passed. Will Use default metric module
   }, options);
 
   if (options.host) {
@@ -702,6 +703,11 @@ function AwmVideo(streamName, options) {
                 //actually switch to the new source url
                 this.setSourceParams(newurl, usetracks);
 
+                AwmUtil.event.send("playerUpdate_trackChanged", {
+                  type: Object.keys(usetracks)[0],
+                  trackid: usetracks[Object.keys(usetracks)[0]]
+                }, AwmVideo.video);
+
                 //restore video position
                 if (AwmVideo.info.type != "live") {
                   var f = function () {
@@ -801,6 +807,20 @@ function AwmVideo(streamName, options) {
 
         AwmUtil.event.send("initialized", null, options.target);
         AwmVideo.log("Initialized");
+
+
+        try {
+          if (AwmVideo.metrics || AwmVideo.options.metrics) {
+            AwmVideo.metrics = AwmUtil.object.extend({}, AwmVideo.options.metrics);
+            AwmVideo.metrics = AwmUtil.object.extend(getAwmMetric(AwmVideo, AwmVideo.stream), AwmVideo.metrics);
+
+            AwmVideo.metrics.start();
+          }
+
+        } catch (e) {
+          AwmVideo.log("Couldn't start statistic module" + e.message);
+        }
+
         if (AwmVideo.options.callback) {
           options.callback(AwmVideo);
         }
@@ -1121,6 +1141,9 @@ function AwmVideo(streamName, options) {
       delete this.container;
     }
     AwmUtil.empty(this.options.target);
+
+    AwmVideo.metrics.stop();
+
     delete this.video;
 
   };

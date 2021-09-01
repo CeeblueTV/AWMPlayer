@@ -9,6 +9,8 @@ function getAwmDefaultMonitor(AwmVideo) {
       active: false
     },
     SCORE_UPDATE_EVENT: 'score_updated',
+    PROTOCOL_CHANGE_EVENT: 'protocol_changed',
+
     threshold: function () { // Returns the score threshold below which the "action" should be taken
       if (this.AwmVideo.source.type === "webrtc") {
         return 0.95;

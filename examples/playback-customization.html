@@ -83,6 +83,10 @@
     monitor: {
       // Here you can add fields to override them in monitor (default AdjustableMonitor monitor). If any function would be here it just replace AdjustableMonitor;
       PROTOCOL_CHANGE_EVENT, // Override event's name that shoots when protocol initialized or changed
+    },
+    // Send player metrics to server if setup. Pass object or true to enable monitoring
+    metrics: {
+      METRICS_URL: "ws://localhost:8080/"  // Override url for sending statistic
     }
   }
 
