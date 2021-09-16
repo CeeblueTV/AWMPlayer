@@ -1116,8 +1116,11 @@ AwmSkins["default"] = {
 
       //apply initial video state
       var initevent = AwmUtil.event.addListener(video, "loadstart", function () {
-        if (('localStorage' in window) && (localStorage != null) && ('awmVolume' in localStorage)) {
-          AwmVideo.player.api.volume = localStorage['awmVolume'];
+        try {
+          if (('localStorage' in window) && (localStorage != null) && ('awmVolume' in localStorage)) {
+            AwmVideo.player.api.volume = localStorage['awmVolume'];
+          }
+        } catch (e) {
         }
         AwmUtil.event.removeListener(initevent);
       });
@@ -1748,20 +1751,22 @@ AwmSkins["default"] = {
                   AwmVideo.player.api.setSubtitle();
                 }
               });
+              try {
+                //load last used language if available
+                if (('localStorage' in window) && (localStorage != null) && ('awmSubtitleLanguage' in localStorage)) {
+                  for (var i in t) {
+                    if (t[i].lang == localStorage['awmSubtitleLanguage']) {
+                      select.value = i;
 
-              //load last used language if available
-              if (("localStorage" in window) && (localStorage != null) && ("awmSubtitleLanguage" in localStorage)) {
-                for (var i in t) {
-                  if (t[i].lang == localStorage["awmSubtitleLanguage"]) {
-                    select.value = i;
-
-                    //trigger onchange
-                    var e = document.createEvent("Event");
-                    e.initEvent("change");
-                    select.dispatchEvent(e);
-                    break;
+                      //trigger onchange
+                      var e = document.createEvent('Event');
+                      e.initEvent('change');
+                      select.dispatchEvent(e);
+                      break;
+                    }
                   }
                 }
+              } catch (e) {
               }
             } else {
               AwmUtil.event.addListener(select, "change", function () {
