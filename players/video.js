@@ -21160,15 +21160,9 @@
 
       try {
         if (Object.keys(values).length) {
-          try {
-            window$1.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(values));
-          } catch (e) {
-          }
+          window$1.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(values));
         } else {
-          try {
-            window$1.localStorage.removeItem(LOCAL_STORAGE_KEY);
-          } catch (e) {
-          }
+          window$1.localStorage.removeItem(LOCAL_STORAGE_KEY);
         }
       } catch (err) {
         log.warn(err);
@@ -55722,18 +55716,11 @@
   };
 
   var getVhsLocalStorage = function getVhsLocalStorage() {
-    try {
-      if (!window.localStorage) {
-        return null;
-      }
-    } catch (e) {
+    if (!window.localStorage) {
       return null;
     }
 
-    try {
-      var storedObject = window.localStorage.getItem(LOCAL_STORAGE_KEY$1);
-    } catch (e) {
-    }
+    var storedObject = window.localStorage.getItem(LOCAL_STORAGE_KEY$1);
 
     if (!storedObject) {
       return null;
@@ -55748,11 +55735,7 @@
   };
 
   var updateVhsLocalStorage = function updateVhsLocalStorage(options) {
-    try {
-      if (!window.localStorage) {
-        return false;
-      }
-    } catch (e) {
+    if (!window.localStorage) {
       return false;
     }
 

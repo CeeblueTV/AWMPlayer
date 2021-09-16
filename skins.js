@@ -1752,13 +1752,9 @@ AwmSkins["default"] = {
                 }
               });
               try {
-              //load last used language if available
-              if (("localStorage" in window) && (localStorage != null) && ("awmSubtitleLanguage" in localStorage)) {
-                for (var i in t) {
-                  try {
-                    window$1.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(values));
-
-
+                //load last used language if available
+                if (('localStorage' in window) && (localStorage != null) && ('awmSubtitleLanguage' in localStorage)) {
+                  for (var i in t) {
                     if (t[i].lang == localStorage['awmSubtitleLanguage']) {
                       select.value = i;
 
@@ -1768,10 +1764,8 @@ AwmSkins["default"] = {
                       select.dispatchEvent(e);
                       break;
                     }
-                  } catch (e) {
                   }
                 }
-              }
               } catch (e) {
               }
             } else {
