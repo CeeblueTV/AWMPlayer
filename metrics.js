@@ -51,7 +51,7 @@ function getAwmMetric(AwmVideo, streamId) {
 
     stop() {
       for (let listener in this.listeners) {
-        AwmUtil.event.removeListener(listener);
+        AwmUtil.event.removeListener(this.listeners[listener]);
       }
 
       this.websocket.close();
