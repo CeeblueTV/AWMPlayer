@@ -846,6 +846,16 @@ var AwmUtil = {
       }
 
       return output;
+    },
+    findTrack: function (metaTracks, idx) {
+      for (const elementName in metaTracks) {
+        if (metaTracks[elementName].idx === idx) {
+          return metaTracks[elementName];
+        }
+      }
+
+      //shouldn't happen
+      return null;
     }
   },
   isTouchDevice: function () {

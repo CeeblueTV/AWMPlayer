@@ -348,6 +348,8 @@ p.prototype.build = function (AwmVideo, callback) {
     //console.log("sb inited");
   };
 
+  this.currentTracks = [];
+
   this.wsconnect = function () {
     return new Promise(function (resolve) {
       //prepare websocket (both data and messages)
@@ -490,6 +492,9 @@ p.prototype.build = function (AwmVideo, callback) {
                   }
                 }
               }
+
+              notifyIfTrackChanged(msg.data.tracks);
+
               break;
             }
             case "tracks": {
@@ -623,12 +628,14 @@ p.prototype.build = function (AwmVideo, callback) {
 
               }
 
-              if (msg.data.codecs && msg.data.codecs.length) {
-                AwmUtil.event.send("playerUpdate_trackChanged", {
-                  codecsId: msg.data.codecs,
-                  tracksId: msg.data.tracks
-                }, AwmVideo.video);
-              }
+              notifyIfTrackChanged(msg.data.tracks);
+
+              break;
+            }
+            case 'info': {
+              notifyIfTrackChanged(msg.data.tracks);
+
+              break
             }
           }
           if (msg.type in this.listeners) {
@@ -731,6 +738,24 @@ p.prototype.build = function (AwmVideo, callback) {
     this.ws.addListener("codec_data", f);
     send({type: "request_codec_data", supported_codecs: AwmVideo.source.supportedCodecs});
   }.bind(this));
+
+  function notifyIfTrackChanged(tracks) {
+    const newTracksIdx = tracks.filter(idx => !player.currentTracks.includes(idx));
+    if (newTracksIdx.length > 0) {
+      for (const newTrackIdx of newTracksIdx) {
+        const { type, idx } = AwmUtil.tracks.findTrack(AwmVideo.info.meta.tracks, +newTrackIdx);
+
+        //create an event to pass this to the skin
+        AwmUtil.event.send('playerUpdate_trackChanged', {
+          type,
+          trackid: idx
+        }, AwmVideo.video);
+      }
+
+      player.currentTracks = tracks;
+    }
+  }
+
 
   function send(cmd) {
     if (!player.ws) {
