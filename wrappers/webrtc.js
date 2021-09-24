@@ -405,7 +405,7 @@ p.prototype.build = function (AwmVideo, callback) {
       if (!this.isConnected) {
         throw "Not connected, cannot pause."
       }
-      this.signaling.send({type: "pause"});
+      this.signaling.send({type: "hold"});
     };
     this.setTrack = function (obj) {
       if (!this.isConnected) {
