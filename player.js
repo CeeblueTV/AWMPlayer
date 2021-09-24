@@ -126,13 +126,6 @@ function AwmVideo(streamName, options) {
 
     var source = false;
 
-    if (options.startCombo) {
-      options.startCombo.started = {
-        player: false,
-        source: false
-      };
-    }
-
     // Retrieve the sources we can loop over
     var sources;
     if (options.forceSource) {
@@ -218,6 +211,19 @@ function AwmVideo(streamName, options) {
         current: false
       }
     };
+
+    if (options.startCombo) {
+      options.startCombo.started = {
+        player: false,
+        source: false
+      };
+      for (var i = 0; i < players.length; i++) {
+        if (players[i].shortname == options.startCombo.player) {
+          options.startCombo.player = i;
+          break;
+        }
+      }
+    }
 
     function checkStartCombo(which) {
       if ((options.startCombo) && (!options.startCombo.started[which])) {
@@ -897,6 +903,7 @@ function AwmVideo(streamName, options) {
       socket.die = false;
       socket.destroy = function () {
         this.die = true;
+        this.onclose = function(){};
         this.close();
       };
       socket.onopen = function () {
