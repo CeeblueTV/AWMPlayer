@@ -356,14 +356,47 @@ p.prototype.build = function (AwmVideo, callback) {
       this.ws = new WebSocket(AwmVideo.source.url);
       this.ws.binaryType = "arraybuffer";
 
+      this.ws.s = this.ws.send;
+      this.ws.send = function(){
+        if (this.readyState == 1) {
+          return this.s.apply(this,arguments);
+        }
+        return false;
+      };
+
       this.ws.onopen = function () {
+        this.wasConnected = true;
         resolve();
       };
       this.ws.onerror = function () {
         AwmVideo.showError("MP4 over WS: websocket error");
-      }
+      };
       this.ws.onclose = function () {
         AwmVideo.log("MP4 over WS: websocket closed");
+
+        if (this.wasConnected && (!AwmVideo.destroyed)) {
+          AwmVideo.log("MP4 over WS: reopening websocket");
+          player.wsconnect().then(function(){
+            if (!player.sb) {
+              //retrieve codec info
+              var f = function(msg){
+                //got codec data, set up source buffer
+
+                if (!player.sb) { player.sbinit(msg.data.codecs); }
+                else { player.api.play(); }
+
+                player.ws.removeListener("codec_data",f);
+              };
+              player.ws.addListener("codec_data",f);
+              send({type:"request_codec_data",supported_codecs:AwmVideo.source.supportedCodecs});
+            }
+            else {
+              player.api.play();
+            }
+          },function(){
+            AwmVideo.error("Lost connection to the Media Server");
+          });
+        }
       };
       this.ws.listeners = {}; //kind of event listener list for websocket messages
       this.ws.addListener = function (type, f) {

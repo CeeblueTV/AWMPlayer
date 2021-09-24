@@ -851,7 +851,7 @@ function AwmVideo(streamName, options) {
       //try again without a startCombo
       delete AwmVideo.options.startCombo;
       AwmVideo.unload('No compatible players found - retrying without startCombo.');
-      AwmVideo = awmPlay(AwmVideo.stream, AwmVideo.options);
+      awmPlay(AwmVideo.stream, AwmVideo.options);
     } else {
       AwmVideo.showError("No compatible player/source combo found.", {reload: true});
       AwmUtil.event.send("initializeFailed", null, options.target);
@@ -909,7 +909,7 @@ function AwmVideo(streamName, options) {
       socket.onopen = function () {
         this.wasConnected = true;
 
-        //report player status to AwmVideoServer
+        //report player status to CeeblueCloud
         if (!AwmVideo.reporting) {
           AwmVideo.reporting = {
             stats: {
