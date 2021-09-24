@@ -761,6 +761,11 @@ p.prototype.build = function (AwmVideo, callback) {
     f();
   }
 
+  me.api.ABR_resize = function(size){
+    AwmVideo.log("Requesting the video track with the resolution that best matches the player size");
+    me.api.setTracks({video:"~"+[size.width,size.height].join("x")});
+  };
+
   me.api.unload = function () {
     try {
       me.webrtc.stop();

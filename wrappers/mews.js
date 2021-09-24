@@ -940,10 +940,11 @@ p.prototype.build = function (AwmVideo, callback) {
       }
     },
     setTracks: function (obj) {
+      if (!AwmUtil.object.keys(obj).length) { return; }
       obj.type = "tracks";
       obj = AwmUtil.object.extend({
         type: "tracks",
-        seek_time: Math.max(0, video.currentTime * 1e3 - (500 + player.ws.serverDelay.get()))
+      //  seek_time: Math.max(0, video.currentTime * 1e3 - (500 + player.ws.serverDelay.get()))
       }, obj);
       send(obj);
     },
@@ -1110,22 +1111,63 @@ p.prototype.build = function (AwmVideo, callback) {
     });
   }
 
+  this.ABR = {
+    size: null,
+    bitrate: null,
+    generateString: function(type,raw){
+      switch (type) {
+        case "size": {
+          return "~"+[raw.width,raw.height].join("x");
+        }
+        case "bitrate": {
+          return "<"+Math.round(raw)+"bps,minbps";
+        }
+        default: {
+          throw "Unknown ABR type";
+        }
+      }
+    },
+    request: function(type,value){
+      this[type] = value;
+
+      var request = [];
+      if (this.bitrate !== null) {
+        request.push(this.generateString("bitrate",this.bitrate));
+      }
+      if (this.size !== null) {
+        request.push(this.generateString("size",this.size));
+      }
+      else {
+        request.push("maxbps");
+      }
+
+      return player.api.setTracks({
+        video: request.join(",|")
+      });
+    }
+  }
+
+  this.api.ABR_resize = function(size){
+    AwmVideo.log("Requesting the video track with the resolution that best matches the player size");
+    player.ABR.request("size",size);
+  };
   //ABR: monitor playback issues and switch to lower bitrate track if available
+  //NB: this ABR requests a lower bitrate if needed, but it can never go back up
   this.monitor = {
     bitCounter: [],
     bitsSince: [],
     currentBps: null,
     nWaiting: 0,
     nWaitingThreshold: 3,
-    listener: AwmVideo.event.addListener(video, 'waiting', function () {
+    listener: AwmVideo.options.ABR_bitrate ? AwmUtil.event.addListener(video,"waiting",function(){
       player.monitor.nWaiting++;
 
       if (player.monitor.nWaiting >= player.monitor.nWaitingThreshold) {
         player.monitor.nWaiting = 0;
-        AwmVideo.log('ABR threshold triggered, requesting lower quality');
         player.monitor.action();
       }
-    }),
+    }) : null,
+
     getBitRate: function () {
       if (player.sb && !player.sb.paused) {
 
@@ -1144,7 +1186,7 @@ p.prototype.build = function (AwmVideo, callback) {
         var dt = new Date().getTime() - since;
         this.currentBps = bits / (dt * 1e-3);
 
-        //console.log(AwmUtil.format.bytes(this.currentBps)+"its/s");
+        //console.log(AwmUtil.format.bits(this.currentBps)+"its/s");
 
       }
 
@@ -1153,8 +1195,12 @@ p.prototype.build = function (AwmVideo, callback) {
       }, 500);
     },
     action: function () {
-      player.api.setTracks({ video: 'max<' + Math.round(this.currentBps) + 'bps' });
-    }
+      if (AwmVideo.options.setTracks && AwmVideo.options.setTracks.video) {
+        //a video track was selected by the user, do not change it
+        return;
+      }
+      AwmVideo.log("ABR threshold triggered, requesting lower quality");
+      player.ABR.request("bitrate",this.currentBps);    }
   };
 
   this.monitor.getBitRate();

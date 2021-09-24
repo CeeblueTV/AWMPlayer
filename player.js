@@ -39,6 +39,8 @@ function AwmVideo(streamName, options) {
     height: false,        // No set height
     maxwidth: false,      // No max width (apart from targets dimensions)
     maxheight: false,     // No max height (apart from targets dimensions)
+    ABR_resize: true,     //for supporting wrappers: when the player resizes, request a video track that matches the resolution best
+    ABR_bitrate: true,    //for supporting wrappers: when there are playback issues, request a lower bitrate video track
     AwmVideoObject: false, // No reference object is passed
     metrics: false // No metrics module passed. Will Use default metric module
   }, options);
@@ -446,6 +448,12 @@ function AwmVideo(streamName, options) {
       }
     }
 
+    //check AwmServer version if combined track selection is supported
+    if (AwmVideo.options.ABR_bitrate && AwmVideo.options.ABR_resize && (AwmVideo.info && !AwmVideo.info.selver)) {
+      //having both won't work, disable bitrate based ABR
+      AwmVideo.options.ABR_bitrate = false;
+    }
+
 
     if (AwmVideo.choosePlayer()) {
 
@@ -641,8 +649,14 @@ function AwmVideo(streamName, options) {
             };
 
           }
-          AwmVideo.player.resize = function (options) {
+          AwmVideo.player.resize = function (options, oldsize) {
             var container = AwmVideo.video.currentTarget.querySelector(".awmvideo");
+            if (!oldsize) {
+              oldsize = {
+                width: AwmVideo.video.clientWidth,
+                height: AwmVideo.video.clientHeight
+              };
+            }
             if (!container.hasAttribute("data-fullscreen")) {
               //if ((!document.fullscreenElement) || (document.fullscreenElement.parentElement != AwmVideo.video.currentTarget)) {
               //first, base the size on the video dimensions
@@ -658,7 +672,7 @@ function AwmVideo(streamName, options) {
                   width: window.innerWidth,
                   height: false,
                   reiterating: true
-                });
+                }, oldsize);
               }
 
               //check if the container is smaller than the video, if so, set the max size to the current container dimensions and reiterate
@@ -668,7 +682,7 @@ function AwmVideo(streamName, options) {
                   width: false,
                   height: AwmVideo.video.currentTarget.clientHeight,
                   reiterating: true
-                });
+                }, oldsize);
               }
               if ((AwmVideo.video.currentTarget.clientWidth) && (AwmVideo.video.currentTarget.clientWidth < size.width)) {
                 //console.log("current w:",size.width,"target w:",AwmVideo.video.currentTarget.clientWidth);
@@ -676,19 +690,23 @@ function AwmVideo(streamName, options) {
                   width: AwmVideo.video.currentTarget.clientWidth,
                   height: false,
                   reiterating: true
-                });
+                }, oldsize);
               }
-              AwmVideo.log("Player size calculated: " + size.width + " x " + size.height + " px");
-              return true;
             } else {
-
               //this is the video that is in the main container, and resize this one to the screen dimensions
-              this.setSize({
-                height: window.innerHeight,
-                width: window.innerWidth
-              });
+              size = {
+                width: window.innerWidth,
+                height: window.innerHeight
+              }
+
+              this.setSize(size);
               return true;
             }
+            if ((size.width != oldsize.width) || (size.height != oldsize.height)) {
+              AwmVideo.log('Player size calculated: ' + size.width + ' x ' + size.height + ' px');
+              AwmVideo.event.send('player_resize', size, AwmVideo.video);
+            }
+            return true;
           };
 
           //if this is the main video
@@ -834,7 +852,42 @@ function AwmVideo(streamName, options) {
               }
             }
           }
+          if (AwmVideo.player.api.ABR_resize && AwmVideo.options.ABR_resize) {
+            var resizeratelimiter = false;
+            AwmUtil.event.addListener(AwmVideo.video,"player_resize",function(e){
+              if (AwmVideo.options.setTracks && AwmVideo.options.setTracks.video) {
+                //trackselection is not set to 'automatic'
+                return;
+              }
 
+              //Whenever the player resizes, start a timer. When the timer ends, request the correct video track. When the player resizes before the timer ends, stop it: track request is sent 1s after the player has the new size
+
+              if (resizeratelimiter) {
+                AwmVideo.timers.stop(resizeratelimiter);
+              }
+              resizeratelimiter = AwmVideo.timers.start(function(){
+                AwmVideo.player.api.ABR_resize(e.message);
+                resizeratelimiter = false;
+              },1e3);
+
+            });
+
+            AwmUtil.event.addListener(AwmVideo.video,"trackSetToAuto",function(e){
+              //the user selected automatic track selection, update the track resolution
+              if (e.message == "video") {
+                AwmVideo.player.api.ABR_resize({
+                  width: AwmVideo.video.clientWidth,
+                  height: AwmVideo.video.clientHeight
+                });
+              }
+            });
+            //initialize
+            AwmVideo.player.api.ABR_resize({
+              width: AwmVideo.video.clientWidth,
+              height: AwmVideo.video.clientHeight
+            });
+
+          }
         }
 
         for (var i in AwmVideo.player.onreadylist) {

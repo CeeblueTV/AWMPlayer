@@ -1486,7 +1486,12 @@ AwmSkins["default"] = {
         var checkboxes = {};
 
         function changeToTracks(type, value) {
-          AwmVideo.log("User selected " + type + " track with id " + value);
+          if (value) {
+            AwmVideo.log('User selected ' + type + ' track with id ' + value);
+          } else {
+            AwmVideo.log('User selected automatic track selection for ' + type);
+            AwmUtil.event.send('trackSetToAuto', type, AwmVideo.video);
+          }
 
           if (!AwmVideo.options.setTracks) {
             AwmVideo.options.setTracks = {};
@@ -2611,6 +2616,12 @@ AwmSkins.dev = {
                 resolve();
               }, function () {
               });
+            }
+          },
+          "Current bitrate": function(){
+            if (AwmVideo.player.monitor && ("currentBps" in AwmVideo.player.monitor)) {
+              var out = AwmUtil.format.bits(AwmVideo.player.monitor.currentBps);
+              return out ? out+"ps" : out;
             }
           }
         };
