@@ -397,7 +397,7 @@ p.prototype.build = function (AwmVideo, callback) {
       this.ws.onclose = function () {
         AwmVideo.log("MP4 over WS: websocket closed");
 
-        if (this.wasConnected && (!AwmVideo.destroyed)) {
+        if (this.wasConnected && (!AwmVideo.destroyed) && (AwmVideo.state == "Stream is online")) {
           AwmVideo.log("MP4 over WS: reopening websocket");
           player.wsconnect().then(function(){
             if (!player.sb) {
@@ -460,6 +460,7 @@ p.prototype.build = function (AwmVideo, callback) {
                 AwmUtil.event.removeListener(eObj);
               });
 
+              player.ws.onclose = function(){}; //don't reopen websocket, just close, it's okay, rly
               break;
             }
             case "on_time": {
