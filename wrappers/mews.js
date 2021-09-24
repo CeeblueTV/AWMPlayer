@@ -436,6 +436,14 @@ p.prototype.build = function (AwmVideo, callback) {
           });
         }
       };
+
+      this.ws.timeOut = AwmVideo.timers.start(function(){
+        if (player.ws.readyState == 0) {
+          AwmVideo.log("MP4 over WS: socket timeout - try next combo");
+          AwmVideo.nextCombo();
+        }
+      },5e3);
+
       this.ws.listeners = {}; //kind of event listener list for websocket messages
       this.ws.addListener = function (type, f) {
         if (!(type in this.listeners)) {

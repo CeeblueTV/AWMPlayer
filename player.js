@@ -971,9 +971,21 @@ function AwmVideo(streamName, options) {
       socket.die = false;
       socket.destroy = function () {
         this.die = true;
+        if (AwmVideo.reporting) {
+          AwmVideo.reporting.reportStats();
+          AwmVideo.reporting = false;
+        }
         this.onclose = function(){};
         this.close();
       };
+      //add a timeout: if the websocket does not connect, switch to http polling
+      socket.timeOut = AwmVideo.timers.start(function(){
+        if (socket.readyState <= 1) {
+          //either it hasn't opened yet, or it is open but we've not received a message so this timer hasn't been removed yet
+          socket.destroy();
+          openWithGet();
+        }
+      },5e3);
       socket.onopen = function () {
         this.wasConnected = true;
 
@@ -1174,6 +1186,11 @@ function AwmVideo(streamName, options) {
       var on_ended_show_state = false;
       var on_waiting_show_state = false;
       socket.addEventListener("message", function (e) {
+        if (socket.timeOut) {
+          AwmVideo.timers.stop(socket.timeOut);
+          socket.timeOut = false;
+        }
+
         var data = JSON.parse(e.data);
         if (!data) {
           AwmVideo.showError("Error while parsing stream status stream. Obtained: " + e.data.toString(), {reload: true});

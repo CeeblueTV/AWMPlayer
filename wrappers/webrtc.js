@@ -461,6 +461,13 @@ p.prototype.build = function (AwmVideo, callback) {
       onEvent({type: "on_connected"});
     };
 
+    this.ws.timeOut = AwmVideo.timers.start(function(){
+      if (AwmVideo.player.webrtc.signaling.ws.readyState == 0) {
+        AwmVideo.log("WebRTC: socket timeout - try next combo");
+        AwmVideo.nextCombo();
+      }
+    },5e3);
+
     this.ws.onmessage = function (e) {
       try {
         var cmd = JSON.parse(e.data);
