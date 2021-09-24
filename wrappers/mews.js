@@ -110,6 +110,7 @@ p.prototype.build = function (AwmVideo, callback) {
   var player = this;
   player.name = "mews";
   //player.debugging = true;
+  //player.debugging = "dl"; //download appended data on ms close
 
   //this function is called both when the websocket is ready and the media source is ready - both should be open to proceed
   function checkReady() {
@@ -140,33 +141,31 @@ p.prototype.build = function (AwmVideo, callback) {
         if (player.debugging) {
           console.error('ms ended', e);
         }
+        if (player.debugging == 'dl') {
 
-        //for debugging
+          function downloadBlob(data, fileName, mimeType) {
+            var blob, url;
+            blob = new Blob([data], {
+              type: mimeType
+            });
+            url = window.URL.createObjectURL(blob);
+            downloadURL(url, fileName);
+            setTimeout(function () {
+              return window.URL.revokeObjectURL(url);
+            }, 1000);
+          }
 
-        function downloadBlob(data, fileName, mimeType) {
-          var blob, url;
-          blob = new Blob([data], {
-            type: mimeType
-          });
-          url = window.URL.createObjectURL(blob);
-          downloadURL(url, fileName);
-          setTimeout(function () {
-            return window.URL.revokeObjectURL(url);
-          }, 1000);
-        }
+          function downloadURL(data, fileName) {
+            var a;
+            a = document.createElement('a');
+            a.href = data;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.style = 'display: none';
+            a.click();
+            a.remove();
+          }
 
-        function downloadURL(data, fileName) {
-          var a;
-          a = document.createElement('a');
-          a.href = data;
-          a.download = fileName;
-          document.body.appendChild(a);
-          a.style = 'display: none';
-          a.click();
-          a.remove();
-        }
-
-        if (player.debugging) {
           var l = 0;
           for (var i = 0; i < player.sb.appended.length; i++) {
             l += player.sb.appended[i].length;
@@ -981,7 +980,10 @@ p.prototype.build = function (AwmVideo, callback) {
           var f = function () {
             video.currentTime = value;
             if (video.currentTime != value) {
-              if (player.debugging) console.log("Failed to set video.currentTime, wanted:", value, "got:", video.currentTime);
+              if (player.debugging) {
+                AwmVideo.log("Failed to seek, wanted:",value,"got:",video.currentTime.toFixed(3));
+                player.sb._doNext(f);
+              }
               player.sb._doNext(f);
             }
           }
