@@ -2298,6 +2298,10 @@ AwmSkins.dev = {
   structure: AwmUtil.object.extend({}, AwmSkins["default"].structure, true),
   blueprints: {
     timeout: function () { //don't use countdowns on buttons
+      //don't use countdowns on buttons unless AwmVideo.options.reloadDelay is set
+      if (this.options.reloadDelay !== false) {
+        return AwmSkins.default.blueprints.timeout.apply(this, arguments);
+      }
       return false;
     },
     log: function () {

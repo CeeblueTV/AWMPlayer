@@ -123,6 +123,11 @@ function AwmVideo(streamName, options) {
     return url;
   }
 
+  if (options.reloadDelay && (options.reloadDelay > 3600)) {
+    options.reloadDelay /= 1000;
+    this.log('A reloadDelay of more than an hour was set: assuming milliseconds were intended. ReloadDelay is now ' + options.reloadDelay + 's');
+  }
+
   new AwmSkin(this);
 
   this.checkCombo = function (options, quiet) {
