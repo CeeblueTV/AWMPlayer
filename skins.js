@@ -1123,7 +1123,7 @@ AwmSkins["default"] = {
       }, button);
 
       //apply initial video state
-      var initevent = AwmUtil.event.addListener(video, "loadstart", function () {
+      var initevent = AwmUtil.event.addListener(video, "loadedmetadata", function () {
         try {
           if (('localStorage' in window) && (localStorage != null) && ('awmVolume' in localStorage)) {
             AwmVideo.player.api.volume = localStorage['awmVolume'];
