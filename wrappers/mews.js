@@ -820,6 +820,7 @@ p.prototype.build = function (AwmVideo, callback) {
             player.ws.removeListener("on_time", f);
           } else if (e.data.current > video.currentTime) {
             player.sb.paused = false;
+            video.currentTime = e.data.current*1e-3;
             video.play().then(resolve).catch(reject);
             player.ws.removeListener("on_time", f);
           }
