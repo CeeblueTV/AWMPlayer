@@ -62,8 +62,13 @@ AwmSkins["default"] = {
         ],
       }
     },
-    videocontainer: {type: "video"},
-    controls: {
+    videocontainer: {
+      type: "container",
+      children: [
+        {type: "videobackground", alwaysDisplay: false, delay: 5 },
+        {type: "video"}
+      ]
+    },    controls: {
       if: function () {
         return !!(this.player && this.player.api && this.player.api.play)
       },
@@ -84,7 +89,16 @@ AwmSkins["default"] = {
                 classes: ["awmvideo-pointer"]
               },
               {type: "currentTime"},
-              {type: "totalTime"},
+              {
+                if: function(){
+                  //show the total time if the player size is larger than 300px
+                  if (("size" in this) && (this.size.width > 300) || ((!this.info.hasVideo || (this.source.type.split("/")[1] == "audio")))) {
+                    return true;
+                  }
+                  return false;
+                },
+                then: {type: "totalTime"}
+              },
               {
                 type: "container",
                 classes: ["awmvideo-align-right"],
@@ -2285,8 +2299,64 @@ AwmSkins["default"] = {
       button.appendChild(document.createTextNode(options.label));
 
       return button;
-    }
+    },
+    videobackground: function(options) {
+      /* options.alwaysDisplay : if true, always draw the video on the canvas */
+      /* options.delay         : delay of the draw timeout in seconds */
+      if (!options) { options = {}; }
+      if (!options.delay) { options.delay = 5; }
 
+      var ele = document.createElement("div");
+      var AwmVideo = this;
+
+      var canvasses = [];
+      for (var n = 0; n < 2; n++) {
+        var c = document.createElement("canvas");
+        c._context = c.getContext("2d");
+        ele.appendChild(c);
+        canvasses.push(c);
+      }
+
+      var index = 0;
+      var drawing = false;
+      function draw() {
+        //only draw if the element is visible, don't waste cpu
+        if (options.alwaysDisplay || (AwmVideo.video.videoWidth/AwmVideo.video.videoHeight != ele.clientWidth / ele.clientHeight)) {
+
+          canvasses[index].removeAttribute("data-front"); //put last one behind again
+          //console.log(new Date().toLocaleTimeString(),"draw");
+
+          index++;
+          if (index >= canvasses.length) { index = 0; }
+
+          var c = canvasses[index];
+          var ctx = c._context;
+
+          c.width = AwmVideo.video.videoWidth;
+          c.height = AwmVideo.video.videoHeight;
+          ctx.drawImage(AwmVideo.video,0,0);
+          c.setAttribute("data-front","");
+        }
+
+        if (!AwmVideo.player.api.paused) {
+          AwmVideo.timers.start(function(){
+            draw();
+          },options.delay * 1e3);
+        }
+        else {
+          drawing = false;
+        }
+
+      }
+      AwmUtil.event.addListener(AwmVideo.video,"playing",function(){
+        if (!drawing) {
+          draw();
+          drawing = true;
+        }
+      });
+
+      return ele;
+    }
   },
   colors: {
     fill: "#fff",
