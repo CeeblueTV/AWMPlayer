@@ -739,7 +739,7 @@ function AwmVideo(streamName, options) {
                 //restore video position
                 if (AwmVideo.info.type != "live") {
                   var f = function () {
-                    this.currentTime = time;
+                    AwmVideo.player.api.currentTime = time;
                     this.removeEventListener("loadedmetadata", f);
                   };
                   AwmUtil.event.addListener(AwmVideo.video, "loadedmetadata", f);

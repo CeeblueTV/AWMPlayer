@@ -359,7 +359,7 @@ AwmSkins["default"] = {
       if (AwmVideo.options.autoplay) {
         //because Awm doesn't send data instantly (but real time), it can take a little while before canplaythrough is fired. Rather than wait, we can just start playing at the canplay event
         AwmUtil.event.addListener(AwmVideo.video, "canplay", function () {
-          if (AwmVideo.player.api.paused) {
+          if (AwmVideo.player.api && AwmVideo.player.api.paused) {
             var promise = AwmVideo.player.api.play();
             if (promise) {
               promise.catch(function () {
