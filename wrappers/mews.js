@@ -835,7 +835,7 @@ p.prototype.build = function (AwmVideo, callback) {
     },
     pause: function () {
       video.pause();
-      send({type: "hold",});
+      send({ type: 'hold' });
       if (player.sb) {
         player.sb.paused = true;
       }
@@ -862,8 +862,6 @@ p.prototype.build = function (AwmVideo, callback) {
         }
       });
       player.ws.close();
-      delete window.awmMewsOnVisibilityChange;
-      document.removeEventListener("visibilitychange", onVisibilityChange);
     }
   };
 
@@ -954,33 +952,6 @@ p.prototype.build = function (AwmVideo, callback) {
       });
     }
   });
-  //pause if tab is hidden to prevent buildup of frames
-  var autopaused = false;
-
-  //only add this once!
-  function onVisibilityChange() {
-    if (document.hidden) {
-      //check if we are playing (not video.paused! that already returns true)
-      if (!player.sb.paused) {
-        player.api.pause();
-        autopaused = true;
-        if (AwmVideo.info.type == "live") {
-          autopaused = "live"; //go to live point
-          //NB: even if the player wasn't near the live point when it was paused, we've likely exited the buffer while we were paused, so the current position probably won't exist anymore. Just skip to live.
-        }
-        AwmVideo.log("Pausing the player as the tab is inactive.");
-      }
-    } else if (autopaused) {
-      player.api.play(autopaused == "live");
-      autopaused = false;
-      AwmVideo.log("Restarting the player as the tab is now active again.");
-    }
-  }
-
-  if (!window.awmMewsOnVisibilityChange) {
-    window.awmMewsOnVisibilityChange = true;
-    document.addEventListener("visibilitychange", onVisibilityChange);
-  }
 
   var seeking = false;
   AwmUtil.event.addListener(video, "seeking", function () {
@@ -1001,6 +972,19 @@ p.prototype.build = function (AwmVideo, callback) {
         AwmVideo.log("Skipped over buffer gap (from " + AwmUtil.format.time(video.currentTime) + " to " + AwmUtil.format.time(video.buffered.start(buffern + 1)) + ")");
         video.currentTime = video.buffered.start(buffern + 1);
       }
+    }
+  });
+  AwmUtil.event.addListener(video, 'pause', function () {
+    if (player.sb && !player.sb.paused) {
+      AwmVideo.log('The browser paused the vid - probably because it has no audio and the tab is no longer visible. Pausing download.');
+      send({ type: 'hold' });
+      player.sb.paused = true;
+      var p = AwmUtil.event.addListener(video, 'play', function () {
+        if (player.sb && player.sb.paused) {
+          send({ type: 'play' });
+        }
+        AwmUtil.event.removeListener(p);
+      });
     }
   });
 
