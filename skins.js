@@ -377,12 +377,16 @@ AwmSkins["default"] = {
 
                   var promise = AwmVideo.player.api.play();
                   if (promise) {
-                    promise.catch(function () {
+                    promise.then(function(){
+                      if (AwmVideo.reporting) { AwmVideo.reporting.stats.d.autoplay = "success"; }
+                    })
+                      .catch(function () {
                       if (AwmVideo.destroyed) {
                         return;
                       }
                       AwmVideo.log("Autoplay failed even with muted video. Unmuting and showing play button.");
-                      AwmVideo.player.api.muted = false;
+                        if (AwmVideo.reporting) { AwmVideo.reporting.stats.d.autoplay = "failed"; }
+                        AwmVideo.player.api.muted = false;
 
                       //play has failed
 
@@ -411,6 +415,8 @@ AwmSkins["default"] = {
                       }
 
                       AwmVideo.log("Autoplay worked! Video will be unmuted on mouseover if the page has been interacted with.");
+
+                      if (AwmVideo.reporting) { AwmVideo.reporting.stats.d.autoplay = "muted"; }
 
                       //show large "muted" icon
                       var largeMutedButton = AwmVideo.skin.icons.build("muted", 100);
@@ -457,9 +463,11 @@ AwmSkins["default"] = {
                     });
                   }
                 }
+                else if (AwmVideo.reporting) { AwmVideo.reporting.stats.d.autoplay = "failed"; }
               });
             }
           }
+          else if (AwmVideo.reporting) { AwmVideo.reporting.stats.d.autoplay = "success"; }
         });
       }
 
@@ -2096,7 +2104,7 @@ AwmSkins["default"] = {
             type: "button",
             label: "Reload player",
             onclick: function () {
-              AwmVideo.reload();
+              AwmVideo.reload("Reloading because reload button was clicked.");
             }
           };
           if (!isNaN(options.reload + "")) {
@@ -2655,7 +2663,7 @@ AwmSkins.dev = {
       AwmUtil.event.addListener(select, "change", function () {
         AwmVideo.options.forcePlayer = (this.value == "" ? false : this.value);
         if (AwmVideo.options.forcePlayer != AwmVideo.playerName) { //only reload if there is a change
-          AwmVideo.reload();
+          AwmVideo.reload("Reloading to force player.");
         }
       });
 
@@ -2703,7 +2711,7 @@ AwmSkins.dev = {
       AwmUtil.event.addListener(select, "change", function () {
         AwmVideo.options.forceType = (this.value == "" ? false : this.value);
         if ((!AwmVideo.source) || (AwmVideo.options.forceType != AwmVideo.source.type)) { //only reload if there is a change
-          AwmVideo.reload();
+          AwmVideo.reload("Reloading to force new type.");
         }
       });
 
@@ -2739,7 +2747,7 @@ AwmSkins.dev = {
       AwmUtil.event.addListener(select, "change", function () {
         AwmVideo.options.forceSource = (this.value == "" ? false : this.value);
         if (AwmVideo.options.forceSource != AwmVideo.source.index) { //only reload if there is a change
-          AwmVideo.reload();
+          AwmVideo.reload("Reloading to force new source.");
         }
       });
 
@@ -2794,7 +2802,7 @@ AwmSkins.dev.structure.submenu.children.unshift({
               title: "Build AwmVideo again",
               label: "AwmVideo.reload();",
               onclick: function () {
-                this.reload();
+                this.reload("Dev-reload button clicked.");
               }
             }, {
               type: "button",

@@ -76,8 +76,9 @@ function getAwmDefaultMonitor(AwmVideo) {
 
       this.vars.score = score;
 
-      AwmUtil.event.send(this.SCORE_UPDATE_EVENT, score, this.AwmVideo.options.target);
-
+      if (AwmVideo.reporting) {
+        AwmVideo.reporting.stats.set("playbackScore",Math.round(score*10)/10);
+      }
       return score;
     },
     valueToScore: function (a, b) {

@@ -498,6 +498,10 @@ p.prototype.build = function (AwmVideo, callback) {
 
               notifyIfTrackChanged(msg.data.tracks);
 
+              if (AwmVideo.reporting && msg.data.tracks) {
+                AwmVideo.reporting.stats.d.tracks = msg.data.tracks.join(",");
+              }
+
               break;
             }
             case "tracks": {

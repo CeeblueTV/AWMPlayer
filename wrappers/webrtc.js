@@ -163,6 +163,9 @@ p.prototype.build = function (AwmVideo, callback) {
 
         currenttracks = ev.tracks;
       }
+      if (AwmVideo.reporting && ev.tracks) {
+        AwmVideo.reporting.stats.d.tracks = ev.tracks.join(",");
+      }
     },
     on_seek: function (e) {
       var thisPlayer = this;
