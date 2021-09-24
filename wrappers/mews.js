@@ -299,6 +299,29 @@ p.prototype.build = function (AwmVideo, callback) {
       }
       player.sb._busy = true;
       //console.log("appendBuffer");
+      try {
+        player.sb.appendBuffer(data);
+      }
+      catch(e){
+        if (e.name == "QuotaExceededError") {
+          if (video.buffered.length) {
+            if (video.currentTime - video.buffered.start(0) > 1) {
+              //clear as much from the buffer as we can
+              AwmVideo.log("Triggered QuotaExceededError: cleaning up "+(Math.round((video.currentTime - video.buffered.start(0) - 1)*10)/10)+"s");
+              player.sb._clean(1);
+            }
+            else {
+              var bufferEnd = video.buffered.end(video.buffered.length-1);
+              AwmVideo.log("Triggered QuotaExceededError but there is nothing to clean: skipping ahead "+(Math.round((bufferEnd - video.currentTime)*10)/10)+"s");
+              video.currentTime = bufferEnd;
+            }
+            player.sb._busy = false;
+            player.sb._append(data); //now try again
+            return;
+          }
+        }
+        AwmVideo.showError(e.message);
+      }
       player.sb.appendBuffer(data);
     }
 
