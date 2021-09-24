@@ -88,10 +88,13 @@ function AwmVideo(streamName, options) {
   this.bootMs = new Date().getTime();
 
   this.timers = {
-    list: {}, // Will contain the timeouts (format timeOutIndex: endTime)
+    list: {}, // Will contain the timeouts format timeOutIndex: endTime
     start: function (callback, delay) {
       var i = setTimeout(function () {
         delete AwmVideo.timers.list[i];
+        if (AwmVideo.destroyed) {
+          return;
+        }
         callback();
       }, delay);
       this.list[i] = new Date(new Date().getTime() + delay);
@@ -1316,6 +1319,7 @@ function AwmVideo(streamName, options) {
     }
     if (this.socket) {
       if (this.reporting) {
+        this.reporting.reportStats();
         this.reporting.report({ unload: reason ? reason : null });
       }
       this.socket.destroy();

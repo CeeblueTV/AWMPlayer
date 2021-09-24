@@ -131,11 +131,15 @@ p.prototype.build = function (AwmVideo, callback) {
         resolve();
       };
       player.ms.onsourceclose = function (e) {
-        console.error("ms close", e);
+        if (player.debugging) {
+          console.error('ms close', e);
+        }
         send({type: "stop"}); //stop sending data please something went wrong
       };
       player.ms.onsourceended = function (e) {
-        console.error("ms ended", e);
+        if (player.debugging) {
+          console.error('ms ended', e);
+        }
 
         //for debugging
 
@@ -303,26 +307,38 @@ p.prototype.build = function (AwmVideo, callback) {
         player.sb.appendBuffer(data);
       }
       catch(e){
-        if (e.name == "QuotaExceededError") {
-          if (video.buffered.length) {
-            if (video.currentTime - video.buffered.start(0) > 1) {
-              //clear as much from the buffer as we can
-              AwmVideo.log("Triggered QuotaExceededError: cleaning up "+(Math.round((video.currentTime - video.buffered.start(0) - 1)*10)/10)+"s");
-              player.sb._clean(1);
+        switch (e.name) {
+          case "QuotaExceededError": {
+            if (video.buffered.length) {
+              if (video.currentTime - video.buffered.start(0) > 1) {
+                //clear as much from the buffer as we can
+                AwmVideo.log("Triggered QuotaExceededError: cleaning up "+(Math.round((video.currentTime - video.buffered.start(0) - 1)*10)/10)+"s");
+                player.sb._clean(1);
+              }
+              else {
+                var bufferEnd = video.buffered.end(video.buffered.length-1);
+                AwmVideo.log("Triggered QuotaExceededError but there is nothing to clean: skipping ahead "+(Math.round((bufferEnd - video.currentTime)*10)/10)+"s");
+                video.currentTime = bufferEnd;
+              }
+              player.sb._busy = false;
+              player.sb._append(data); //now try again
+              return;
             }
-            else {
-              var bufferEnd = video.buffered.end(video.buffered.length-1);
-              AwmVideo.log("Triggered QuotaExceededError but there is nothing to clean: skipping ahead "+(Math.round((bufferEnd - video.currentTime)*10)/10)+"s");
-              video.currentTime = bufferEnd;
+            break;
+          }
+          case "InvalidStateError": {
+            player.api.pause(); //playback is borked, so stop downloading more data
+            if (AwmVideo.video.error) {
+              //Failed to execute 'appendBuffer' on 'SourceBuffer': The HTMLMediaElement.error attribute is not null
+
+              //the video element error is already triggering the showError()
+              return;
             }
-            player.sb._busy = false;
-            player.sb._append(data); //now try again
-            return;
+            break;
           }
         }
         AwmVideo.showError(e.message);
       }
-      player.sb.appendBuffer(data);
     }
 
     //we're initing the source buffer and there is a msg queue of data built up before the buffer was ready. Start by adding these data fragments to the source buffer
@@ -725,8 +741,10 @@ p.prototype.build = function (AwmVideo, callback) {
         }
         var data = new Uint8Array(e.data);
         if (data) {
-          for (var i in player.monitor.bitCounter) {
-            player.monitor.bitCounter[i] += e.data.byteLength * 8;
+          if (player.monitor && player.monitor.bitCounter) {
+            for (var i in player.monitor.bitCounter) {
+              player.monitor.bitCounter[i] += e.data.byteLength*8;
+            }
           }
           if ((player.sb) && (!player.msgqueue)) {
             if (player.sb.updating || player.sb.queue.length || player.sb._busy) {
