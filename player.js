@@ -50,10 +50,17 @@ function AwmVideo(streamName, options) {
   this.options = options;
   this.stream = streamName;
   this.info = false;
+
+  if (!window.AwmInstances) {
+    window.AwmInstances = 0;
+  }
+  window.AwmInstances++;
+  this.n = window.AwmInstances;
+
   this.logs = [];
   this.log = function (message, type) {
     if (!type) {
-      type = "log";
+      type = 'log';
     }
     var event = AwmUtil.event.send(type, message, options.target);
     var data = {
@@ -66,7 +73,7 @@ function AwmVideo(streamName, options) {
     });
     if (this.options.skin == "dev") {
       try {
-        var msg = "[" + (type ? type : "log") + "] " + (AwmVideo.destroyed ? "[DESTROYED] " : "") + (this.player && this.player.api ? AwmUtil.format.time(this.player.api.currentTime, {ms: true}) + " " : "") + message;
+        var msg = '[' + (type ? type : 'log') + '] ' + (AwmVideo.destroyed ? '[DESTROYED] ' : '') + '[#' + (AwmVideo.n) + '] ' + (this.player && this.player.api ? AwmUtil.format.time(this.player.api.currentTime, { ms: true }) + ' ' : '') + message;
         if (type && (type != "log")) {
           console.warn(msg);
         } else {
