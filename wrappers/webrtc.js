@@ -241,6 +241,7 @@ p.prototype.build = function (AwmVideo, callback) {
 
     this.connect = function (callback) {
       thisWebRTCPlayer.isConnecting = true;
+      AwmVideo.container.setAttribute("data-loading","connecting"); //show loading icon while setting up the connection
 
       //chrome on android has a bug where H264 is not available immediately after the tab is opened: https://bugs.chromium.org/p/webrtc/issues/detail?id=11620
       //this workaround tries 5x with 100ms intervals before continuing
@@ -301,11 +302,13 @@ p.prototype.build = function (AwmVideo, callback) {
               AwmVideo.nextCombo();
               break;
             }
+            case "connected": {
+              AwmVideo.container.removeAttribute("data-loading");
+            }
             case "disconnected":
             case "closed":
             case "new":
             case "connecting":
-            case "connected":
             default: {
               AwmVideo.log("WebRTC connection state changed to " + this.connectionState);
               break;
