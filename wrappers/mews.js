@@ -399,7 +399,8 @@ p.prototype.build = function (AwmVideo, callback) {
               //the last fragment has been added to the buffer
               var eObj;
               eObj = AwmUtil.event.addListener(video, "waiting", function () {
-                AwmUtil.event.send("ended", null, video);
+                player.sb.paused = true;
+                AwmUtil.event.send('ended', null, video);
                 AwmUtil.event.removeListener(eObj);
               });
 
@@ -412,7 +413,9 @@ p.prototype.build = function (AwmVideo, callback) {
               if (AwmVideo.info.type != "live") {
                 desiredBuffer += 2000;
               } //if VoD, keep an extra 2 seconds of buffer
-              if (player.debugging) console.log("on_time received", msg.data.current / 1e3, "currtime", video.currentTime, requested_rate + "x", "buffer", Math.round(buffer), "/", Math.round(desiredBuffer), (AwmVideo.info.type == "live" ? "latency:" + Math.round(msg.data.end - video.currentTime * 1e3) + "ms" : ""), "listeners", player.ws.listeners && player.ws.listeners.on_time ? player.ws.listeners.on_time : 0, "msgqueue", player.msgqueue ? player.msgqueue.length : 0, msg.data);
+              if (player.debugging) {
+                console.log('on_time received', msg.data.current / 1e3, 'currtime', video.currentTime, requested_rate + 'x', 'buffer', Math.round(buffer), '/', Math.round(desiredBuffer), (AwmVideo.info.type == 'live' ? 'latency:' + Math.round(msg.data.end - video.currentTime * 1e3) + 'ms' : ''), 'bitrate:' + AwmUtil.format.bits(player.monitor.currentBps) + '/s', 'listeners', player.ws.listeners && player.ws.listeners.on_time ? player.ws.listeners.on_time : 0, 'msgqueue', player.msgqueue ? player.msgqueue.length : 0, msg.data);
+              }
 
               if (!player.sb) {
                 AwmVideo.log("Received on_time, but the source buffer is being cleared right now. Ignoring.");
@@ -647,6 +650,9 @@ p.prototype.build = function (AwmVideo, callback) {
         }
         var data = new Uint8Array(e.data);
         if (data) {
+          for (var i in player.monitor.bitCounter) {
+            player.monitor.bitCounter[i] += e.data.byteLength * 8;
+          }
           if ((player.sb) && (!player.msgqueue)) {
             if (player.sb.updating || player.sb.queue.length || player.sb._busy) {
               player.sb.queue.push(data);
@@ -845,8 +851,6 @@ p.prototype.build = function (AwmVideo, callback) {
       obj.type = "tracks";
       obj = AwmUtil.object.extend({
         type: "tracks",
-        audio: null,
-        video: null,
         seek_time: Math.max(0, video.currentTime * 1e3 - (500 + player.ws.serverDelay.get()))
       }, obj);
       send(obj);
@@ -1003,11 +1007,60 @@ p.prototype.build = function (AwmVideo, callback) {
           video.buffered.end(i),
         ]);
       }
-      console.log("waiting", "currentTime", video.currentTime, "buffers", buffers, contained ? "contained" : "outside of buffer", "readystate", video.readyState, "networkstate", video.networkState);
+      console.log('waiting', 'currentTime', video.currentTime, 'buffers', buffers, contained ? 'contained' : 'outside of buffer', 'readystate', video.readyState, 'networkstate', video.networkState);
       if ((video.readyState >= 2) && (video.networkState >= 2)) {
-        console.error("Why am I waiting?!");
+        console.error('Why am I waiting?!');
       }
 
     });
   }
+
+  //ABR: monitor playback issues and switch to lower bitrate track if available
+  this.monitor = {
+    bitCounter: [],
+    bitsSince: [],
+    currentBps: null,
+    nWaiting: 0,
+    nWaitingThreshold: 3,
+    listener: AwmVideo.event.addListener(video, 'waiting', function () {
+      player.monitor.nWaiting++;
+
+      if (player.monitor.nWaiting >= player.monitor.nWaitingThreshold) {
+        player.monitor.nWaiting = 0;
+        AwmVideo.log('ABR threshold triggered, requesting lower quality');
+        player.monitor.action();
+      }
+    }),
+    getBitRate: function () {
+      if (player.sb && !player.sb.paused) {
+
+        this.bitCounter.push(0);
+        this.bitsSince.push(new Date().getTime());
+
+        //calculate current bitrate
+        var bits, since;
+        if (this.bitCounter.length > 5) {
+          bits = player.monitor.bitCounter.shift();
+          since = this.bitsSince.shift();
+        } else {
+          bits = player.monitor.bitCounter[0];
+          since = this.bitsSince[0];
+        }
+        var dt = new Date().getTime() - since;
+        this.currentBps = bits / (dt * 1e-3);
+
+        //console.log(AwmUtil.format.bytes(this.currentBps)+"its/s");
+
+      }
+
+      AwmVideo.timers.start(function () {
+        player.monitor.getBitRate();
+      }, 500);
+    },
+    action: function () {
+      player.api.setTracks({ video: 'max<' + Math.round(this.currentBps) + 'bps' });
+    }
+  };
+
+  this.monitor.getBitRate();
 };

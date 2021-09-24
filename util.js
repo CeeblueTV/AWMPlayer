@@ -40,7 +40,7 @@ var AwmUtil = {
       return string.charAt(0).toUpperCase() + string.slice(1);
     },
     number: function (num) {
-      if ((isNaN(Number(num))) || (num == 0)) {
+      if ((isNaN(Number(num))) || (Number(num) === 0)) {
         return num;
       }
 
@@ -63,12 +63,12 @@ var AwmUtil = {
 
       return num;
     },
-    bytes: function (val) {
+    bytes: function (val, bits) {
       if (isNaN(Number(val))) {
         return val;
       }
 
-      var suffix = ["bytes", "KB", "MB", "GB", "TB", "PB"];
+      var suffix = bits ? ['bits', 'Kb', 'Mb', 'Gb', 'Tb', 'Pb'] : ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
       var unit;
       if (val == 0) {
         unit = suffix[0];
@@ -82,6 +82,9 @@ var AwmUtil = {
         }
       }
       return this.number(val) + unit;
+    },
+    bits: function (val) {
+      return this.bytes(val, true);
     },
     mime2human: function (mime) {
       switch (mime) {
