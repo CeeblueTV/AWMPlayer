@@ -1,19 +1,19 @@
 awmplayers.webrtc = {
-  name: "WebRTC player",
-  mimes: ["webrtc"],
+  name: 'WebRTC player',
+  mimes: ['webrtc'],
   priority: AwmUtil.object.keys(awmplayers).length + 1,
   isMimeSupported: function (mimetype) {
     return (this.mimes.indexOf(mimetype) == -1 ? false : true);
   },
   isBrowserSupported: function (mimetype, source, AwmVideo) {
 
-    if ((!("WebSocket" in window)) || (!("RTCPeerConnection" in window))) {
+    if ((!('WebSocket' in window)) || (!('RTCPeerConnection' in window))) {
       return false;
     }
 
     //check for http/https mismatch
-    if (location.protocol.replace(/^http/, "ws") != AwmUtil.http.url.split(source.url.replace(/^http/, "ws")).protocol) {
-      AwmVideo.log("HTTP/HTTPS mismatch for this source");
+    if (location.protocol.replace(/^http/, 'ws') != AwmUtil.http.url.split(source.url.replace(/^http/, 'ws')).protocol) {
+      AwmVideo.log('HTTP/HTTPS mismatch for this source');
       return false;
     }
 
@@ -28,54 +28,54 @@ p.prototype.build = function (AwmVideo, callback) {
   var me = this;
   me.name = 'webrtc';
 
-  if ((typeof WebRTCBrowserEqualizerLoaded == "undefined") || (!WebRTCBrowserEqualizerLoaded)) {
+  if ((typeof WebRTCBrowserEqualizerLoaded == 'undefined') || (!WebRTCBrowserEqualizerLoaded)) {
     //load it
-    var scripttag = document.createElement("script");
-    scripttag.src = AwmVideo.urlappend(AwmVideo.options.host + "/webrtc.js");
-    AwmVideo.log("Retrieving webRTC browser equalizer code from " + scripttag.src);
+    var scripttag = document.createElement('script');
+    scripttag.src = AwmVideo.urlappend(AwmVideo.options.host + '/webrtc.js');
+    AwmVideo.log('Retrieving webRTC browser equalizer code from ' + scripttag.src);
     document.head.appendChild(scripttag);
     scripttag.onerror = function () {
-      AwmVideo.showError("Failed to load webrtc browser equalizer", {nextCombo: 5});
-    }
+      AwmVideo.showError('Failed to load webrtc browser equalizer', { nextCombo: 5 });
+    };
     scripttag.onload = function () {
       me.build(AwmVideo, callback);
-    }
+    };
     return;
   }
 
-  var video = document.createElement("video");
-  video.setAttribute("playsinline", ""); //iphones. effin' iphones.
+  var video = document.createElement('video');
+  video.setAttribute('playsinline', ''); //iphones. effin' iphones.
 
   //apply options
-  var attrs = ["autoplay", "loop", "poster"];
+  var attrs = ['autoplay', 'loop', 'poster'];
   for (var i in attrs) {
     var attr = attrs[i];
     if (AwmVideo.options[attr]) {
-      video.setAttribute(attr, (AwmVideo.options[attr] === true ? "" : AwmVideo.options[attr]));
+      video.setAttribute(attr, (AwmVideo.options[attr] === true ? '' : AwmVideo.options[attr]));
     }
   }
   if (AwmVideo.options.muted) {
     video.muted = true; //don't use attribute because of Chrome bug
   }
-  if (AwmVideo.info.type == "live") {
+  if (AwmVideo.info.type == 'live') {
     video.loop = false;
   }
-  if (AwmVideo.options.controls == "stock") {
-    video.setAttribute("controls", "");
+  if (AwmVideo.options.controls == 'stock') {
+    video.setAttribute('controls', '');
   }
-  video.setAttribute("crossorigin", "anonymous");
+  video.setAttribute('crossorigin', 'anonymous');
   this.setSize = function (size) {
-    video.style.width = size.width + "px";
-    video.style.height = size.height + "px";
+    video.style.width = size.width + 'px';
+    video.style.height = size.height + 'px';
   };
-  AwmUtil.event.addListener(video, "loadeddata", correctSubtitleSync);
-  AwmUtil.event.addListener(video, "seeked", correctSubtitleSync);
+  AwmUtil.event.addListener(video, 'loadeddata', correctSubtitleSync);
+  AwmUtil.event.addListener(video, 'seeked', correctSubtitleSync);
 
   if (!AwmVideo.options.autoplay) {
-    AwmUtil.event.addListener(video, "canplay", function () {
-      var onplay = AwmUtil.event.addListener(video, "play", function () {
-        AwmVideo.log("Pausing because autoplay is disabled");
-        var onpause = AwmUtil.event.addListener(video, "pause", function () {
+    AwmUtil.event.addListener(video, 'canplay', function () {
+      var onplay = AwmUtil.event.addListener(video, 'play', function () {
+        AwmVideo.log('Pausing because autoplay is disabled');
+        var onpause = AwmUtil.event.addListener(video, 'pause', function () {
           AwmVideo.options.autoplay = false;
           AwmUtil.event.removeListener(onpause);
         });
@@ -93,11 +93,11 @@ p.prototype.build = function (AwmVideo, callback) {
       seekoffset = 0;
       hasended = false;
       this.webrtc.play();
-      AwmUtil.event.send("webrtc_connected", null, video);
+      AwmUtil.event.send('webrtc_connected', null, video);
     },
     on_disconnected: function () {
-      AwmUtil.event.send("webrtc_disconnected", null, video);
-      AwmVideo.log("Websocket sent on_disconnect");
+      AwmUtil.event.send('webrtc_disconnected', null, video);
+      AwmVideo.log('Websocket sent on_disconnect');
       /*
         If a VoD file ends, we receive an on_stop, but no on_disconnect
         If a live stream ends, we receive an on_disconnect, but no on_stop
@@ -112,11 +112,11 @@ p.prototype.build = function (AwmVideo, callback) {
     },
     on_answer_sdp: function (ev) {
       if (!ev.result) {
-        AwmVideo.showError("Failed to open stream.");
+        AwmVideo.showError('Failed to open stream.');
         this.on_disconnected();
         return;
       }
-      AwmVideo.log("SDP answer received");
+      AwmVideo.log('SDP answer received');
     },
     on_time: function (ev) {
       //timeupdate
@@ -126,14 +126,14 @@ p.prototype.build = function (AwmVideo, callback) {
         correctSubtitleSync();
       }
 
-      if ((!("paused" in ev) || (!ev.paused)) && (video.paused)) {
+      if ((!('paused' in ev) || (!ev.paused)) && (video.paused)) {
         video.play();
       }
 
       var d = (ev.end == 0 ? Infinity : ev.end * 1e-3);
       if (d != duration) {
         duration = d;
-        AwmUtil.event.send("durationchange", d, video);
+        AwmUtil.event.send('durationchange', d, video);
       }
 
       if ((ev.tracks) && (currenttracks != ev.tracks)) {
@@ -154,7 +154,7 @@ p.prototype.build = function (AwmVideo, callback) {
             }
 
             //create an event to pass this to the skin
-            AwmUtil.event.send("playerUpdate_trackChanged", {
+            AwmUtil.event.send('playerUpdate_trackChanged', {
               type: type,
               trackid: ev.tracks[i]
             }, AwmVideo.video);
@@ -164,26 +164,26 @@ p.prototype.build = function (AwmVideo, callback) {
         currenttracks = ev.tracks;
       }
       if (AwmVideo.reporting && ev.tracks) {
-        AwmVideo.reporting.stats.d.tracks = ev.tracks.join(",");
+        AwmVideo.reporting.stats.d.tracks = ev.tracks.join(',');
       }
     },
     on_seek: function (e) {
       var thisPlayer = this;
-      AwmUtil.event.send("seeked", seekoffset, video);
+      AwmUtil.event.send('seeked', seekoffset, video);
 
       //set playback rate to auto if seek was to live point
       if (e.live_point) {
-        thisPlayer.webrtc.playbackrate("auto");
+        thisPlayer.webrtc.playbackrate('auto');
       }
 
-      if ("seekPromise" in this.webrtc.signaling) {
+      if ('seekPromise' in this.webrtc.signaling) {
         video.play().then(function () {
-          if ("seekPromise" in thisPlayer.webrtc.signaling) {
-            thisPlayer.webrtc.signaling.seekPromise.resolve("Play promise resolved");
+          if ('seekPromise' in thisPlayer.webrtc.signaling) {
+            thisPlayer.webrtc.signaling.seekPromise.resolve('Play promise resolved');
           }
         }).catch(function () {
-          if ("seekPromise" in thisPlayer.webrtc.signaling) {
-            thisPlayer.webrtc.signaling.seekPromise.reject("Play promise rejected");
+          if ('seekPromise' in thisPlayer.webrtc.signaling) {
+            thisPlayer.webrtc.signaling.seekPromise.reject('Play promise rejected');
           }
         });
       } else {
@@ -192,12 +192,12 @@ p.prototype.build = function (AwmVideo, callback) {
     },
     on_speed: function (e) {
       this.webrtc.play_rate = e.play_rate_curr;
-      AwmUtil.event.send("ratechange", e, video);
+      AwmUtil.event.send('ratechange', e, video);
     },
     on_stop: function () {
-      AwmVideo.log("Websocket sent on_stop");
+      AwmVideo.log('Websocket sent on_stop');
       video.pause();
-      AwmUtil.event.send("ended", null, video);
+      AwmUtil.event.send('ended', null, video);
       hasended = true;
     }
   };
@@ -208,26 +208,26 @@ p.prototype.build = function (AwmVideo, callback) {
     this.localOffer = null;
     this.isConnected = false;
     this.isConnecting = false;
-    this.play_rate = "auto";
+    this.play_rate = 'auto';
     var thisWebRTCPlayer = this;
 
     this.on_event = function (ev) {
       switch (ev.type) {
-        case "on_connected": {
+        case 'on_connected': {
           thisWebRTCPlayer.isConnected = true;
           thisWebRTCPlayer.isConnecting = false;
           break;
         }
-        case "on_answer_sdp": {
+        case 'on_answer_sdp': {
           thisWebRTCPlayer.peerConn
-            .setRemoteDescription({type: "answer", sdp: ev.answer_sdp})
+            .setRemoteDescription({ type: 'answer', sdp: ev.answer_sdp })
             .then(function () {
             }, function (err) {
               console.error(err);
             });
           break;
         }
-        case "on_disconnected": {
+        case 'on_disconnected': {
           thisWebRTCPlayer.isConnected = false;
           break;
         }
@@ -235,13 +235,13 @@ p.prototype.build = function (AwmVideo, callback) {
       if (ev.type in me.listeners) {
         return me.listeners[ev.type].call(me, ev);
       }
-      AwmVideo.log("Unhandled WebRTC event " + ev.type + ": " + JSON.stringify(ev));
+      AwmVideo.log('Unhandled WebRTC event ' + ev.type + ': ' + JSON.stringify(ev));
       return false;
     };
 
     this.connect = function (callback) {
       thisWebRTCPlayer.isConnecting = true;
-      AwmVideo.container.setAttribute("data-loading","connecting"); //show loading icon while setting up the connection
+      AwmVideo.container.setAttribute('data-loading', 'connecting'); //show loading icon while setting up the connection
 
       //chrome on android has a bug where H264 is not available immediately after the tab is opened: https://bugs.chromium.org/p/webrtc/issues/detail?id=11620
       //this workaround tries 5x with 100ms intervals before continuing
@@ -249,10 +249,10 @@ p.prototype.build = function (AwmVideo, callback) {
         var p = new Promise(function (resolve, reject) {
           function promise_body(n) {
             try {
-              var r = RTCRtpReceiver.getCapabilities("video");
+              var r = RTCRtpReceiver.getCapabilities('video');
               for (var i = 0; i < r.codecs.length; i++) {
-                if (r.codecs[i].mimeType == "video/H264") {
-                  resolve("H264 found :)");
+                if (r.codecs[i].mimeType == 'video/H264') {
+                  resolve('H264 found :)');
                   return;
                 }
               }
@@ -261,10 +261,10 @@ p.prototype.build = function (AwmVideo, callback) {
                   promise_body(n - 1);
                 }, 100);
               } else {
-                reject("H264 not found :(");
+                reject('H264 not found :(');
               }
             } catch (e) {
-              resolve("Checker unavailable");
+              resolve('Checker unavailable');
             }
           }
 
@@ -275,7 +275,7 @@ p.prototype.build = function (AwmVideo, callback) {
       }
 
       checkH264(5).catch(function () {
-        AwmVideo.log("Beware: this device does not seem to be able to play H264.");
+        AwmVideo.log('Beware: this device does not seem to be able to play H264.');
       }).finally(function () {
         thisWebRTCPlayer.signaling = new WebRTCSignaling(thisWebRTCPlayer.on_event);
         var opts = {};
@@ -296,21 +296,21 @@ p.prototype.build = function (AwmVideo, callback) {
             return;
           } //the player doesn't exist any more
           switch (this.connectionState) {
-            case "failed": {
+            case 'failed': {
               //WebRTC will never work (firewall maybe?)
-              AwmVideo.log("UDP connection failed, trying next combo.", "error");
+              AwmVideo.log('UDP connection failed, trying next combo.', 'error');
               AwmVideo.nextCombo();
               break;
             }
-            case "connected": {
-              AwmVideo.container.removeAttribute("data-loading");
+            case 'connected': {
+              AwmVideo.container.removeAttribute('data-loading');
             }
-            case "disconnected":
-            case "closed":
-            case "new":
-            case "connecting":
+            case 'disconnected':
+            case 'closed':
+            case 'new':
+            case 'connecting':
             default: {
-              AwmVideo.log("WebRTC connection state changed to " + this.connectionState);
+              AwmVideo.log('WebRTC connection state changed to ' + this.connectionState);
               break;
             }
           }
@@ -320,18 +320,18 @@ p.prototype.build = function (AwmVideo, callback) {
             return;
           } //the player doesn't exist any more
           switch (this.iceConnectionState) {
-            case "failed": {
-              AwmVideo.showError("ICE connection " + this.iceConnectionState);
+            case 'failed': {
+              AwmVideo.showError('ICE connection ' + this.iceConnectionState);
               break;
             }
-            case "disconnected":
-            case "closed":
-            case "new":
-            case "checking":
-            case "connected":
-            case "completed":
+            case 'disconnected':
+            case 'closed':
+            case 'new':
+            case 'checking':
+            case 'connected':
+            case 'completed':
             default: {
-              AwmVideo.log("WebRTC ICE connection state changed to " + this.iceConnectionState);
+              AwmVideo.log('WebRTC ICE connection state changed to ' + this.iceConnectionState);
               break;
             }
           }
@@ -341,7 +341,7 @@ p.prototype.build = function (AwmVideo, callback) {
 
     this.play = function () {
       if (!this.isConnected) {
-        throw "Not connected, cannot play";
+        throw 'Not connected, cannot play';
       }
 
       this.peerConn
@@ -356,7 +356,7 @@ p.prototype.build = function (AwmVideo, callback) {
             .then(function () {
               thisWebRTCPlayer.signaling.sendOfferSDP(thisWebRTCPlayer.localOffer.sdp);
             }, function (err) {
-              console.error(err)
+              console.error(err);
             });
         }, function (err) {
           throw err;
@@ -365,36 +365,36 @@ p.prototype.build = function (AwmVideo, callback) {
 
     this.stop = function () {
       if (!this.isConnected) {
-        throw "Not connected, cannot stop."
+        throw 'Not connected, cannot stop.';
       }
-      this.signaling.send({type: "stop"});
+      this.signaling.send({ type: 'stop' });
     };
     this.seek = function (seekTime) {
       var p = new Promise(function (resolve, reject) {
         if (!thisWebRTCPlayer.isConnected || !thisWebRTCPlayer.signaling) {
           if (thisWebRTCPlayer.isConnecting) {
 
-            var listener = AwmUtil.event.addListener(AwmVideo.video, "loadstart", function () {
+            var listener = AwmUtil.event.addListener(AwmVideo.video, 'loadstart', function () {
               thisWebRTCPlayer.seek(seekTime);
               AwmUtil.event.removeListener(listener);
             });
-            return reject("Not connected yet, will seek once connected");
+            return reject('Not connected yet, will seek once connected');
           } else {
-            return reject("Failed seek: not connected");
+            return reject('Failed seek: not connected');
           }
         }
-        thisWebRTCPlayer.signaling.send({type: "seek", "seek_time": (seekTime == "live" ? "live" : seekTime * 1e3)});
-        if ("seekPromise" in thisWebRTCPlayer.signaling) {
-          thisWebRTCPlayer.signaling.seekPromise.reject("Doing new seek");
+        thisWebRTCPlayer.signaling.send({ type: 'seek', 'seek_time': (seekTime == 'live' ? 'live' : seekTime * 1e3) });
+        if ('seekPromise' in thisWebRTCPlayer.signaling) {
+          thisWebRTCPlayer.signaling.seekPromise.reject('Doing new seek');
         }
 
         thisWebRTCPlayer.signaling.seekPromise = {
           resolve: function () {
-            resolve("seeked");
+            resolve('seeked');
             delete thisWebRTCPlayer.signaling.seekPromise;
           },
           reject: function (msg) {
-            reject("Failed to seek: " + msg);
+            reject('Failed to seek: ' + msg);
             delete thisWebRTCPlayer.signaling.seekPromise;
           }
         };
@@ -403,28 +403,28 @@ p.prototype.build = function (AwmVideo, callback) {
     };
     this.pause = function () {
       if (!this.isConnected) {
-        throw "Not connected, cannot pause."
+        throw 'Not connected, cannot pause.';
       }
-      this.signaling.send({type: "hold"});
+      this.signaling.send({ type: 'hold' });
     };
     this.setTrack = function (obj) {
       if (!this.isConnected) {
-        throw "Not connected, cannot set track."
+        throw 'Not connected, cannot set track.';
       }
-      obj.type = "tracks";
+      obj.type = 'tracks';
       this.signaling.send(obj);
     };
     this.playbackrate = function (value) {
-      if (typeof value == "undefined") {
-        return (me.webrtc.play_rate == "auto" ? 1 : me.webrtc.play_rate);
+      if (typeof value == 'undefined') {
+        return (me.webrtc.play_rate == 'auto' ? 1 : me.webrtc.play_rate);
       }
 
       if (!this.isConnected) {
-        throw "Not connected, cannot change playback rate."
+        throw 'Not connected, cannot change playback rate.';
       }
 
       this.signaling.send({
-        type: "set_speed",
+        type: 'set_speed',
         play_rate: value
       });
 
@@ -435,7 +435,7 @@ p.prototype.build = function (AwmVideo, callback) {
         var entries = Array.from(d.entries());
         for (var i in entries) {
           var value = entries[i];
-          if (value[1].type == "inbound-rtp") {
+          if (value[1].type == 'inbound-rtp') {
             output[value[0]] = value[1];
           }
         }
@@ -455,25 +455,25 @@ p.prototype.build = function (AwmVideo, callback) {
   function WebRTCSignaling(onEvent) {
     this.ws = null;
 
-    this.ws = new WebSocket(AwmVideo.source.url.replace(/^http/, "ws"));
+    this.ws = new WebSocket(AwmVideo.source.url.replace(/^http/, 'ws'));
 
     this.ws.onopen = function () {
-      onEvent({type: "on_connected"});
+      onEvent({ type: 'on_connected' });
     };
 
-    this.ws.timeOut = AwmVideo.timers.start(function(){
+    this.ws.timeOut = AwmVideo.timers.start(function () {
       if (AwmVideo.player.webrtc.signaling.ws.readyState == 0) {
-        AwmVideo.log("WebRTC: socket timeout - try next combo");
+        AwmVideo.log('WebRTC: socket timeout - try next combo');
         AwmVideo.nextCombo();
       }
-    },5e3);
+    }, 5e3);
 
     this.ws.onmessage = function (e) {
       try {
         var cmd = JSON.parse(e.data);
         onEvent(cmd);
       } catch (err) {
-        console.error("Failed to parse a response from AwmServer", err, e.data);
+        console.error('Failed to parse a response from AwmServer', err, e.data);
       }
     };
 
@@ -484,21 +484,21 @@ p.prototype.build = function (AwmVideo, callback) {
           //AwmVideo.showError("WebRTC websocket closed unexpectedly");
         }
         default: {
-          onEvent({type: "on_disconnected", code: ev.code});
+          onEvent({ type: 'on_disconnected', code: ev.code });
           break;
         }
       }
-    }
+    };
 
     this.sendOfferSDP = function (sdp) {
-      this.send({type: "offer_sdp", offer_sdp: sdp});
+      this.send({ type: 'offer_sdp', offer_sdp: sdp });
     };
     this.send = function (cmd) {
       if (!this.ws) {
-        throw "Not initialized, cannot send " + JSON.stringify(cmd);
+        throw 'Not initialized, cannot send ' + JSON.stringify(cmd);
       }
       this.ws.send(JSON.stringify(cmd));
-    }
+    };
   }
 
   this.webrtc = new WebRTCPlayer();
@@ -507,14 +507,14 @@ p.prototype.build = function (AwmVideo, callback) {
 
   //override video duration
   var duration;
-  Object.defineProperty(this.api, "duration", {
+  Object.defineProperty(this.api, 'duration', {
     get: function () {
       return duration;
     }
   });
 
   //override seeking
-  Object.defineProperty(this.api, "currentTime", {
+  Object.defineProperty(this.api, 'currentTime', {
     get: function () {
       return seekoffset + video.currentTime;
     },
@@ -522,7 +522,7 @@ p.prototype.build = function (AwmVideo, callback) {
       seekoffset = value - video.currentTime;
       video.pause();
       var promise = me.webrtc.seek(value);
-      AwmUtil.event.send("seeking", value, video);
+      AwmUtil.event.send('seeking', value, video);
       if (promise) {
         promise.catch(function () {
           //do nothing
@@ -534,7 +534,7 @@ p.prototype.build = function (AwmVideo, callback) {
   });
 
   //override playbackrate
-  Object.defineProperty(this.api, "playbackRate", {
+  Object.defineProperty(this.api, 'playbackRate', {
     get: function () {
       return me.webrtc.playbackrate();
     },
@@ -558,14 +558,14 @@ p.prototype.build = function (AwmVideo, callback) {
   }
 
   var list = [
-    "volume",
-    "muted",
-    "loop",
-    "paused",
-    "error",
-    "textTracks",
-    "webkitDroppedFrameCount",
-    "webkitDecodedFrameCount"
+    'volume',
+    'muted',
+    'loop',
+    'paused',
+    'error',
+    'textTracks',
+    'webkitDroppedFrameCount',
+    'webkitDecodedFrameCount'
   ];
   for (var i in list) {
     reroute(list[i]);
@@ -580,7 +580,7 @@ p.prototype.build = function (AwmVideo, callback) {
     }
   }
 
-  var list = ["load", "getVideoPlaybackQuality"];
+  var list = ['load', 'getVideoPlaybackQuality'];
   for (var i in list) {
     redirect(list[i]);
   }
@@ -591,27 +591,27 @@ p.prototype.build = function (AwmVideo, callback) {
     if (me.api.currentTime) {
       seekto = me.api.currentTime;
     }
-    if ((AwmVideo.info) && (AwmVideo.info.type == "live")) {
-      seekto = "live";
+    if ((AwmVideo.info) && (AwmVideo.info.type == 'live')) {
+      seekto = 'live';
     }
     if (seekto) {
       var p = new Promise(function (resolve, reject) {
-        if ((!me.webrtc.isConnected) && (me.webrtc.peerConn.iceConnectionState != "completed")) {
+        if ((!me.webrtc.isConnected) && (me.webrtc.peerConn.iceConnectionState != 'completed')) {
           if (!me.webrtc.isConnecting) {
-            AwmVideo.log("Received call to play while not connected, connecting " + me.webrtc.peerConn.iceConnectionState);
+            AwmVideo.log('Received call to play while not connected, connecting ' + me.webrtc.peerConn.iceConnectionState);
             me.webrtc.connect(function () {
               me.webrtc.seek(seekto).then(function (msg) {
-                resolve("played " + msg);
+                resolve('played ' + msg);
               }).catch(function (msg) {
                 reject(msg);
               });
             });
           } else {
-            reject("Still connecting");
+            reject('Still connecting');
           }
         } else {
           me.webrtc.seek(seekto).then(function (msg) {
-            resolve("played " + msg);
+            resolve('played ' + msg);
           }).catch(function (msg) {
             reject(msg);
           });
@@ -633,13 +633,13 @@ p.prototype.build = function (AwmVideo, callback) {
             video: null
           };
           for (let dictionary of a.values()) {
-            if (dictionary.type == "track") {
+            if (dictionary.type == 'track') {
               //average jitter buffer in seconds
               r[dictionary.kind] = dictionary;
             }
           }
           resolve(r);
-        })
+        });
       });
     }
   };
@@ -665,7 +665,7 @@ p.prototype.build = function (AwmVideo, callback) {
         }, reject);
       });
     }
-  }
+  };
 
   //redirect pause
   me.api.pause = function () {
@@ -674,7 +674,7 @@ p.prototype.build = function (AwmVideo, callback) {
       me.webrtc.pause();
     } catch (e) {
     }
-    AwmUtil.event.send("paused", null, video);
+    AwmUtil.event.send('paused', null, video);
   };
 
   me.api.setTracks = function (obj) {
@@ -683,9 +683,9 @@ p.prototype.build = function (AwmVideo, callback) {
     } else {
       var f = function () {
         me.webrtc.setTrack(obj);
-        AwmUtil.event.removeListener({type: "webrtc_connected", callback: f, element: video});
+        AwmUtil.event.removeListener({ type: 'webrtc_connected', callback: f, element: video });
       };
-      AwmUtil.event.addListener(video, "webrtc_connected", f);
+      AwmUtil.event.addListener(video, 'webrtc_connected', f);
     }
   };
 
@@ -701,8 +701,8 @@ p.prototype.build = function (AwmVideo, callback) {
     for (var i = me.api.textTracks[0].cues.length - 1; i >= 0; i--) {
       var cue = me.api.textTracks[0].cues[i];
       me.api.textTracks[0].removeCue(cue);
-      if (!("orig" in cue)) {
-        cue.orig = {start: cue.startTime, end: cue.endTime};
+      if (!('orig' in cue)) {
+        cue.orig = { start: cue.startTime, end: cue.endTime };
       }
       cue.startTime = cue.orig.start - seekoffset;
       cue.endTime = cue.orig.end - seekoffset;
@@ -716,19 +716,19 @@ p.prototype.build = function (AwmVideo, callback) {
 
   me.api.setSubtitle = function (trackmeta) {
     //remove previous subtitles
-    var tracks = video.getElementsByTagName("track");
+    var tracks = video.getElementsByTagName('track');
     for (var i = tracks.length - 1; i >= 0; i--) {
       video.removeChild(tracks[i]);
     }
     if (trackmeta) { //if the chosen track exists
       //add the new one
-      var track = document.createElement("track");
+      var track = document.createElement('track');
       video.appendChild(track);
-      track.kind = "subtitles";
+      track.kind = 'subtitles';
       track.label = trackmeta.label;
       track.srclang = trackmeta.lang;
       track.src = trackmeta.src;
-      track.setAttribute("default", "");
+      track.setAttribute('default', '');
 
       //correct timesync
       track.onload = correctSubtitleSync;
@@ -736,17 +736,17 @@ p.prototype.build = function (AwmVideo, callback) {
   };
 
   //loop
-  AwmUtil.event.addListener(video, "ended", function () {
+  AwmUtil.event.addListener(video, 'ended', function () {
     if (me.api.loop) {
-      if (AwmVideo.state == "Stream is online") {
+      if (AwmVideo.state == 'Stream is online') {
         me.webrtc.connect();
       }
     }
   });
 
-  if ("decodingIssues" in AwmVideo.skin.blueprints) {
+  if ('decodingIssues' in AwmVideo.skin.blueprints) {
     //get additional dev stats
-    var vars = ["nackCount", "pliCount", "packetsLost", "packetsReceived", "bytesReceived"];
+    var vars = ['nackCount', 'pliCount', 'packetsLost', 'packetsReceived', 'bytesReceived'];
     for (var j in vars) {
       me.api[vars[j]] = 0;
     }
@@ -768,9 +768,9 @@ p.prototype.build = function (AwmVideo, callback) {
     f();
   }
 
-  me.api.ABR_resize = function(size){
-    AwmVideo.log("Requesting the video track with the resolution that best matches the player size");
-    me.api.setTracks({video:"~"+[size.width,size.height].join("x")});
+  me.api.ABR_resize = function (size) {
+    AwmVideo.log('Requesting the video track with the resolution that best matches the player size');
+    me.api.setTracks({ video: '~' + [size.width, size.height].join('x') });
   };
 
   me.api.unload = function () {

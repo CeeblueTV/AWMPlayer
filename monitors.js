@@ -12,7 +12,7 @@ function getAwmDefaultMonitor(AwmVideo) {
     PROTOCOL_CHANGE_EVENT: 'protocol_changed',
 
     threshold: function () { // Returns the score threshold below which the "action" should be taken
-      if (this.AwmVideo.source.type === "webrtc") {
+      if (this.AwmVideo.source.type === 'webrtc') {
         return 0.95;
       }
       return 0.75;
@@ -23,12 +23,12 @@ function getAwmDefaultMonitor(AwmVideo) {
       if (this.vars.active) {
         return;
       } //it's already running, don't bother
-      this.AwmVideo.log("Enabling monitor");
+      this.AwmVideo.log('Enabling monitor');
 
 
       this.AwmVideo.monitor.vars.active = true;
 
-      this.repeat()
+      this.repeat();
 
     },
     destroy: function () {          //stops the monitor. This is called when the stream has ended or has been paused by the viewer.
@@ -37,7 +37,7 @@ function getAwmDefaultMonitor(AwmVideo) {
         return;
       } //it's not running, don't bother]
 
-      this.AwmVideo.log("Disabling monitor");
+      this.AwmVideo.log('Disabling monitor');
       this.AwmVideo.timers.stop(this.vars.timer);
 
       this.vars.timer = null;
@@ -52,7 +52,7 @@ function getAwmDefaultMonitor(AwmVideo) {
         return;
       }
 
-      this.AwmVideo.log("Resetting monitor");
+      this.AwmVideo.log('Resetting monitor');
       this.vars.values = [];
     },
     calcScore: function () {        //calculate and save the current score
@@ -77,7 +77,7 @@ function getAwmDefaultMonitor(AwmVideo) {
       this.vars.score = score;
 
       if (AwmVideo.reporting) {
-        AwmVideo.reporting.stats.set("playbackScore",Math.round(score*10)/10);
+        AwmVideo.reporting.stats.set('playbackScore', Math.round(score * 10) / 10);
       }
       return score;
     },
@@ -86,7 +86,7 @@ function getAwmDefaultMonitor(AwmVideo) {
       // If this returns > 1, the video played faster than the clock
       // If this returns < 0, the video time went backwards
       var rate = 1;
-      if (("player" in this.AwmVideo) && ("api" in this.AwmVideo.player) && ("playbackRate" in this.AwmVideo.player.api)) {
+      if (('player' in this.AwmVideo) && ('api' in this.AwmVideo.player) && ('playbackRate' in this.AwmVideo.player.api)) {
         rate = this.AwmVideo.player.api.playbackRate;
       }
       return (b.video - a.video) / (b.clock - a.clock) / rate;
@@ -123,12 +123,12 @@ function getAwmDefaultMonitor(AwmVideo) {
       var score = this.vars.score;
 
       // passive: only if nothing is already showing
-      this.AwmVideo.showError("Poor playback: " + Math.max(0, Math.round(score * 100)) + "%", {
+      this.AwmVideo.showError('Poor playback: ' + Math.max(0, Math.round(score * 100)) + '%', {
         passive: true,
         reload: true,
         nextCombo: true,
         ignore: true,
-        type: "poor_playback"
+        type: 'poor_playback'
       });
     },
     repeat: function () {
@@ -147,6 +147,7 @@ function getAwmDefaultMonitor(AwmVideo) {
     },
   };
 }
+
 function getAwmAdjustableMonitor() {
   return {
     MONITORING_WIDTH: 8,
@@ -182,11 +183,11 @@ function getAwmAdjustableMonitor() {
 
       this.addTrackIdListener();
 
-      this.AwmVideo.log("Enabling monitor");
+      this.AwmVideo.log('Enabling monitor');
 
       this.vars.active = true;
 
-      AwmUtil.event.send(this.PROTOCOL_CHANGE_EVENT, this.AwmVideo.source.type, this.AwmVideo.options.target)
+      AwmUtil.event.send(this.PROTOCOL_CHANGE_EVENT, this.AwmVideo.source.type, this.AwmVideo.options.target);
 
       this.repeat();
     },
@@ -205,9 +206,9 @@ function getAwmAdjustableMonitor() {
     check: function (score) {
       // Get last values
       const values = this.vars.values
-          .filter(item => item.hasOwnProperty('score') && item.score >= 0.0)
-          .filter(item => item.hasOwnProperty('clock'))
-          .slice(Math.max(this.vars.values.length - this.MONITORING_WIDTH, 0));
+        .filter(item => item.hasOwnProperty('score') && item.score >= 0.0)
+        .filter(item => item.hasOwnProperty('clock'))
+        .slice(Math.max(this.vars.values.length - this.MONITORING_WIDTH, 0));
 
       if (values.length === 0) {
         return;
@@ -274,8 +275,8 @@ function getAwmAdjustableMonitor() {
       // Switch DOWN
       // Immediately by min score
       if ((this.qualitySwitchPreviousMode === this.SWITCH_MODE.UP) &&
-          (monitoringDuration >= this.QUALITY_SWITCH_CONNECTION_TIMEOUT)
-          && (monitoringDuration < this.QUALITY_SWITCH_DOWN_TIMEOUT)) {
+        (monitoringDuration >= this.QUALITY_SWITCH_CONNECTION_TIMEOUT)
+        && (monitoringDuration < this.QUALITY_SWITCH_DOWN_TIMEOUT)) {
         if ((scoreMin <= 0.6) || (scoreAvg <= 0.96)) {
           this.AwmVideo.log(`Monitor: => DOWN by min ${scoreMin.toFixed(5)} <= 0.7 or avg ${scoreAvg.toFixed(5)} <= 0.96`);
 
@@ -294,7 +295,7 @@ function getAwmAdjustableMonitor() {
         }
       }
 
-      return false
+      return false;
     },
 
     action: function () {
@@ -308,7 +309,7 @@ function getAwmAdjustableMonitor() {
             this.AwmVideo.log(`Monitor: Action track selection video track id ${this.AwmVideo.options.target.videoTrackId}`);
             if (this.AwmVideo.options.target.videoTrackId !== undefined) {
               let videoTrackIndex = videoTracks.findIndex(item => {
-                const trackid = "idx" in item ? item.idx : item.trackid;
+                const trackid = 'idx' in item ? item.idx : item.trackid;
                 return trackid === this.AwmVideo.options.target.videoTrackId;
               });
               if (videoTrackIndex >= 0) {
@@ -329,7 +330,7 @@ function getAwmAdjustableMonitor() {
 
         if (this.AwmVideo.options.target.videoTrackId !== undefined) {
           let videoTrackIndex = videoTracks.findIndex(item => {
-            const trackid = "idx" in item ? item.idx : item.trackid;
+            const trackid = 'idx' in item ? item.idx : item.trackid;
             return trackid === this.AwmVideo.options.target.videoTrackId;
           });
           if (videoTrackIndex >= 0) {
@@ -398,7 +399,7 @@ function getAwmAdjustableMonitor() {
       const trackmeta = this.tracklist[this.currentBitrateIndex];
       this.AwmVideo.log(`Monitor: Switching quality ${this.result} [${this.currentBitrateIndex}]  (${trackmeta.displayName})`);
 
-      this.AwmVideo.player.api.setTracks({video: ("idx" in trackmeta ? trackmeta.idx : trackmeta.trackid)});
+      this.AwmVideo.player.api.setTracks({ video: ('idx' in trackmeta ? trackmeta.idx : trackmeta.trackid) });
 
       this.reset();
 

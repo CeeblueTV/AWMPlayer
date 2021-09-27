@@ -1,6 +1,6 @@
 awmplayers.videojs = {
-  name: "VideoJS player",
-  mimes: ["html5/application/vnd.apple.mpegurl", "html5/application/vnd.apple.mpegurl;version=7"],
+  name: 'VideoJS player',
+  mimes: ['html5/application/vnd.apple.mpegurl', 'html5/application/vnd.apple.mpegurl;version=7'],
   priority: AwmUtil.object.keys(awmplayers).length + 1,
   isMimeSupported: function (mimetype) {
     return (this.mimes.indexOf(mimetype) == -1 ? false : true);
@@ -9,29 +9,29 @@ awmplayers.videojs = {
 
     //check for http/https mismatch
     if (location.protocol != AwmUtil.http.url.split(source.url).protocol) {
-      AwmVideo.log("HTTP/HTTPS mismatch for this source");
+      AwmVideo.log('HTTP/HTTPS mismatch for this source');
       return false;
     }
 
     //don't use videojs if this location is loaded over file://
-    if ((location.protocol == "file:") && (mimetype == "html5/application/vnd.apple")) {
-      AwmVideo.log("This source (" + mimetype + ") won't load if the page is run via file://");
+    if ((location.protocol == 'file:') && (mimetype == 'html5/application/vnd.apple')) {
+      AwmVideo.log('This source (' + mimetype + ') won\'t load if the page is run via file://');
       return false;
     }
 
-    return ("MediaSource" in window);
+    return ('MediaSource' in window);
   },
   player: function () {
   },
   scriptsrc: function (host) {
-    return host + "/videojs.js";
+    return host + '/videojs.js';
   }
 };
 var p = awmplayers.videojs.player;
 p.prototype = new AwmPlayer();
 p.prototype.build = function (AwmVideo, callback) {
   var me = this; //to allow nested functions to access the player class itself
-  me.name = 'videojs'
+  me.name = 'videojs';
 
   var ele;
 
@@ -40,53 +40,53 @@ p.prototype.build = function (AwmVideo, callback) {
       return;
     }
 
-    AwmVideo.log("Building VideoJS player..");
+    AwmVideo.log('Building VideoJS player..');
 
-    ele = document.createElement("video");
-    if (AwmVideo.source.type != "html5/video/ogg") {
-      ele.crossOrigin = "anonymous"; //required for subtitles, but if ogg, the video won"t load
+    ele = document.createElement('video');
+    if (AwmVideo.source.type != 'html5/video/ogg') {
+      ele.crossOrigin = 'anonymous'; //required for subtitles, but if ogg, the video won"t load
     }
-    ele.setAttribute("playsinline", ""); //for apple
+    ele.setAttribute('playsinline', ''); //for apple
 
-    var shortmime = AwmVideo.source.type.split("/");
-    if (shortmime[0] == "html5") {
+    var shortmime = AwmVideo.source.type.split('/');
+    if (shortmime[0] == 'html5') {
       shortmime.shift();
     }
 
-    var source = document.createElement("source");
-    source.setAttribute("src", AwmVideo.source.url);
+    var source = document.createElement('source');
+    source.setAttribute('src', AwmVideo.source.url);
     me.source = source;
     ele.appendChild(source);
-    source.type = shortmime.join("/");
-    AwmVideo.log("Adding " + source.type + " source @ " + AwmVideo.source.url);
+    source.type = shortmime.join('/');
+    AwmVideo.log('Adding ' + source.type + ' source @ ' + AwmVideo.source.url);
     //if (source.type.indexOf("application/vnd.apple.mpegurl") >= 0) { source.type = "application/x-mpegURL"; }
     //source.type = "application/vnd.apple.mpegurl";
 
-    AwmUtil.class.add(ele, "video-js");
+    AwmUtil.class.add(ele, 'video-js');
 
     var vjsopts = {};
 
     if (AwmVideo.options.autoplay) {
       vjsopts.autoplay = true;
     }
-    if ((AwmVideo.options.loop) && (AwmVideo.info.type != "live")) {
+    if ((AwmVideo.options.loop) && (AwmVideo.info.type != 'live')) {
       //vjsopts.loop = true;
-      ele.setAttribute("loop", "");
+      ele.setAttribute('loop', '');
     }
     if (AwmVideo.options.muted) {
       //vjsopts.muted = true;
-      ele.setAttribute("muted", "");
+      ele.setAttribute('muted', '');
     }
     if (AwmVideo.options.poster) {
       vjsopts.poster = AwmVideo.options.poster;
     }
-    if (AwmVideo.options.controls == "stock") {
-      ele.setAttribute("controls", "");
-      if (!document.getElementById("videojs-css")) {
-        var style = document.createElement("link");
-        style.rel = "stylesheet";
-        style.href = AwmVideo.options.host + "/skins/videojs.css";
-        style.id = "videojs-css";
+    if (AwmVideo.options.controls == 'stock') {
+      ele.setAttribute('controls', '');
+      if (!document.getElementById('videojs-css')) {
+        var style = document.createElement('link');
+        style.rel = 'stylesheet';
+        style.href = AwmVideo.options.host + '/skins/videojs.css';
+        style.id = 'videojs-css';
         document.head.appendChild(style);
       }
     } else {
@@ -101,23 +101,23 @@ p.prototype.build = function (AwmVideo, callback) {
 
     var android = AwmUtil.getAndroid();
     if (android && (parseFloat(android) < 7)) {
-      AwmVideo.log("Detected android < 7: instructing videojs to override native playback");
-      vjsopts.html5 = {hls: {overrideNative: true}};
+      AwmVideo.log('Detected android < 7: instructing videojs to override native playback');
+      vjsopts.html5 = { hls: { overrideNative: true } };
       vjsopts.nativeAudioTracks = false;
       vjsopts.nativeVideoTracks = false;
     }
 
     me.onready(function () {
-      AwmVideo.log("Building videojs");
+      AwmVideo.log('Building videojs');
       me.videojs = videojs(ele, vjsopts, function () {
-        AwmVideo.log("Videojs initialized");
+        AwmVideo.log('Videojs initialized');
       });
 
-      AwmUtil.event.addListener(ele, "error", function (e) {
-        if (e.target.error.message.indexOf("NS_ERROR_DOM_MEDIA_OVERFLOW_ERR") >= 0) {
+      AwmUtil.event.addListener(ele, 'error', function (e) {
+        if (e.target.error.message.indexOf('NS_ERROR_DOM_MEDIA_OVERFLOW_ERR') >= 0) {
           //there is a problem with a certain segment, try reloading
           AwmVideo.timers.start(function () {
-            AwmVideo.log("Reloading player because of NS_ERROR_DOM_MEDIA_OVERFLOW_ERR");
+            AwmVideo.log('Reloading player because of NS_ERROR_DOM_MEDIA_OVERFLOW_ERR');
             AwmVideo.reload();
           }, 1e3);
         }
@@ -129,15 +129,15 @@ p.prototype.build = function (AwmVideo, callback) {
           me.videojs.pause(); //pause goddamn
           me.videojs.dispose(); //and now die, bitch
           me.videojs = false;
-          AwmVideo.log("Videojs instance disposed");
+          AwmVideo.log('Videojs instance disposed');
         }
       };
 
     });
 
-    AwmVideo.log("Built html");
+    AwmVideo.log('Built html');
 
-    if (("Proxy" in window) && ("Reflect" in window)) {
+    if (('Proxy' in window) && ('Reflect' in window)) {
       var overrides = {
         get: {},
         set: {}
@@ -149,10 +149,10 @@ p.prototype.build = function (AwmVideo, callback) {
             return overrides.get[key].apply(target, arguments);
           }
           var method = target[key];
-          if (typeof method === "function") {
+          if (typeof method === 'function') {
             return function () {
               return method.apply(target, arguments);
-            }
+            };
           }
           return method;
         },
@@ -171,11 +171,11 @@ p.prototype.build = function (AwmVideo, callback) {
         //AwmVideo.video.currentTime = value;
       };
 
-      if (AwmVideo.info.type == "live") {
+      if (AwmVideo.info.type == 'live') {
         function getLastBuffer(video) {
           var buffer_end = 0;
           if (video.buffered.length) {
-            buffer_end = video.buffered.end(video.buffered.length - 1)
+            buffer_end = video.buffered.end(video.buffered.length - 1);
           }
           return buffer_end;
         }
@@ -193,7 +193,7 @@ p.prototype.build = function (AwmVideo, callback) {
         AwmVideo.player.api.lastProgress = new Date();
         AwmVideo.player.api.liveOffset = 0;
 
-        AwmUtil.event.addListener(ele, "progress", function () {
+        AwmUtil.event.addListener(ele, 'progress', function () {
           AwmVideo.player.api.lastProgress = new Date();
         });
         overrides.set.currentTime = function (value) {
@@ -201,10 +201,10 @@ p.prototype.build = function (AwmVideo, callback) {
           var offset = value - AwmVideo.player.api.duration;
           //AwmVideo.player.api.liveOffset = offset;
 
-          AwmVideo.log("Seeking to " + AwmUtil.format.time(value) + " (" + Math.round(offset * -10) / 10 + "s from live)");
+          AwmVideo.log('Seeking to ' + AwmUtil.format.time(value) + ' (' + Math.round(offset * -10) / 10 + 's from live)');
           //AwmVideo.video.currentTime -= diff;
           AwmVideo.player.videojs.currentTime(AwmVideo.video.currentTime - diff); //seeking backwards does not work if we set it on the video directly
-        }
+        };
         var lastms = 0;
         overrides.get.currentTime = function () {
           if (AwmVideo.info) {
@@ -215,23 +215,23 @@ p.prototype.build = function (AwmVideo, callback) {
             return 0;
           }
           return time;
-        }
+        };
       }
     } else {
       me.api = ele;
     }
 
     AwmVideo.player.setSize = function (size) {
-      if ("videojs" in AwmVideo.player) {
+      if ('videojs' in AwmVideo.player) {
         AwmVideo.player.videojs.dimensions(size.width, size.height);
 
         //for some reason, the videojs' container won't be resized with the method above.
         //so let's cheat and do it ourselves
-        ele.parentNode.style.width = size.width + "px";
-        ele.parentNode.style.height = size.height + "px";
+        ele.parentNode.style.width = size.width + 'px';
+        ele.parentNode.style.height = size.height + 'px';
       }
-      this.api.style.width = size.width + "px";
-      this.api.style.height = size.height + "px";
+      this.api.style.width = size.width + 'px';
+      this.api.style.height = size.height + 'px';
     };
     AwmVideo.player.api.setSource = function (url) {
       if (!AwmVideo.player.videojs) {
@@ -246,32 +246,32 @@ p.prototype.build = function (AwmVideo, callback) {
     };
     AwmVideo.player.api.setSubtitle = function (trackmeta) {
       //remove previous subtitles
-      var tracks = ele.getElementsByTagName("track");
+      var tracks = ele.getElementsByTagName('track');
       for (var i = tracks.length - 1; i >= 0; i--) {
         ele.removeChild(tracks[i]);
       }
       if (trackmeta) { //if the chosen track exists
         //add the new one
-        var track = document.createElement("track");
+        var track = document.createElement('track');
         ele.appendChild(track);
-        track.kind = "subtitles";
+        track.kind = 'subtitles';
         track.label = trackmeta.label;
         track.srclang = trackmeta.lang;
         track.src = trackmeta.src;
-        track.setAttribute("default", "");
+        track.setAttribute('default', '');
       }
     };
 
-    if (AwmVideo.info.type == "live") {
+    if (AwmVideo.info.type == 'live') {
 
       //for some reason, videojs doesn't always fire the canplay event ???
       //mitigate by sending one when durationchange follows loadstart
 
-      var loadstart = AwmUtil.event.addListener(ele, "loadstart", function () {
+      var loadstart = AwmUtil.event.addListener(ele, 'loadstart', function () {
         AwmUtil.event.removeListener(loadstart);
-        AwmUtil.event.send("canplay", false, this);
+        AwmUtil.event.send('canplay', false, this);
       });
-      var canplay = AwmUtil.event.addListener(ele, "canplay", function () {
+      var canplay = AwmUtil.event.addListener(ele, 'canplay', function () {
         //remove the listener
         if (loadstart) {
           AwmUtil.event.removeListener(loadstart);
@@ -284,7 +284,7 @@ p.prototype.build = function (AwmVideo, callback) {
     callback(ele);
   }
 
-  if ("videojs" in window) {
+  if ('videojs' in window) {
     onVideoJSLoad();
   } else {
     //load the videojs player
@@ -297,7 +297,7 @@ p.prototype.build = function (AwmVideo, callback) {
         AwmVideo.video.pause();
       } catch (e) {
       }
-      AwmVideo.showError("Error in videojs player");
+      AwmVideo.showError('Error in videojs player');
 
       //rate limit the reload
       if (!window.awmplayer_videojs_failures) {
@@ -305,8 +305,8 @@ p.prototype.build = function (AwmVideo, callback) {
         AwmVideo.reload();
       } else {
         if (!timer) {
-          var delay = 0.05 * Math.pow(2, window.awmplayer_videojs_failures)
-          AwmVideo.log("Rate limiter activated: AwmPlayer reload delayed by " + Math.round(delay * 10) / 10 + " seconds.", "error");
+          var delay = 0.05 * Math.pow(2, window.awmplayer_videojs_failures);
+          AwmVideo.log('Rate limiter activated: AwmPlayer reload delayed by ' + Math.round(delay * 10) / 10 + ' seconds.', 'error');
           timer = AwmVideo.timers.start(function () {
             timer = false;
             delete window.videojs;
@@ -327,13 +327,13 @@ p.prototype.build = function (AwmVideo, callback) {
       if (url == scripttag.src) {
         //error in internal videojs code
         //console.error(me.videojs,AwmVideo.video,ele,arguments);
-        window.removeEventListener("error", f);
+        window.removeEventListener('error', f);
         reloadVJSrateLimited();
       }
 
       return false;
     };
-    window.addEventListener("error", f);
+    window.addEventListener('error', f);
 
     //disabled for now because it seemed to cause more issues than it solved
     /*var old_console_error = console.error;
@@ -349,9 +349,9 @@ p.prototype.build = function (AwmVideo, callback) {
 
     scripttag = AwmUtil.scripts.insert(scripturl, {
       onerror: function (e) {
-        var msg = "Failed to load videojs.js";
+        var msg = 'Failed to load videojs.js';
         if (e.message) {
-          msg += ": " + e.message;
+          msg += ': ' + e.message;
         }
         AwmVideo.showError(msg);
       },
@@ -359,4 +359,4 @@ p.prototype.build = function (AwmVideo, callback) {
     }, AwmVideo);
 
   }
-}
+};

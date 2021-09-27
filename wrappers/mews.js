@@ -1,19 +1,19 @@
 awmplayers.mews = {
-  name: "MSE websocket player",
-  mimes: ["ws/video/mp4", "ws/video/webm"],
+  name: 'MSE websocket player',
+  mimes: ['ws/video/mp4', 'ws/video/webm'],
   priority: AwmUtil.object.keys(awmplayers).length + 1,
   isMimeSupported: function (mimetype) {
     return (this.mimes.indexOf(mimetype) == -1 ? false : true);
   },
   isBrowserSupported: function (mimetype, source, AwmVideo) {
 
-    if ((!("WebSocket" in window)) || (!("MediaSource" in window))) {
+    if ((!('WebSocket' in window)) || (!('MediaSource' in window))) {
       return false;
     }
 
     //check for http/https mismatch
-    if (location.protocol.replace(/^http/, "ws") != AwmUtil.http.url.split(source.url.replace(/^http/, "ws")).protocol) {
-      AwmVideo.log("HTTP/HTTPS mismatch for this source");
+    if (location.protocol.replace(/^http/, 'ws') != AwmUtil.http.url.split(source.url.replace(/^http/, 'ws')).protocol) {
+      AwmVideo.log('HTTP/HTTPS mismatch for this source');
       return false;
     }
 
@@ -25,20 +25,20 @@ awmplayers.mews = {
     //check (and save) codec compatibility
     function translateCodec(track) {
       function bin2hex(index) {
-        return ("0" + track.init.charCodeAt(index).toString(16)).slice(-2);
+        return ('0' + track.init.charCodeAt(index).toString(16)).slice(-2);
       }
 
       switch (track.codec) {
-        case "AAC":
-          return "mp4a.40.2";
-        case "MP3":
-          return "mp4a.40.34";
-        case "AC3":
-          return "ec-3";
-        case "H264":
-          return "avc1." + bin2hex(1) + bin2hex(2) + bin2hex(3);
-        case "HEVC":
-          return "hev1." + bin2hex(1) + bin2hex(6) + bin2hex(7) + bin2hex(8) + bin2hex(9) + bin2hex(10) + bin2hex(11) + bin2hex(12);
+        case 'AAC':
+          return 'mp4a.40.2';
+        case 'MP3':
+          return 'mp4a.40.34';
+        case 'AC3':
+          return 'ec-3';
+        case 'H264':
+          return 'avc1.' + bin2hex(1) + bin2hex(2) + bin2hex(3);
+        case 'HEVC':
+          return 'hev1.' + bin2hex(1) + bin2hex(6) + bin2hex(7) + bin2hex(8) + bin2hex(9) + bin2hex(10) + bin2hex(11) + bin2hex(12);
         default:
           return track.codec.toLowerCase();
       }
@@ -47,15 +47,15 @@ awmplayers.mews = {
 
     var codecs = {};
     for (var i in AwmVideo.info.meta.tracks) {
-      if (AwmVideo.info.meta.tracks[i].type != "meta") {
+      if (AwmVideo.info.meta.tracks[i].type != 'meta') {
         codecs[translateCodec(AwmVideo.info.meta.tracks[i])] = AwmVideo.info.meta.tracks[i].codec;
       }
     }
-    var container = mimetype.split("/")[2];
+    var container = mimetype.split('/')[2];
 
     function test(codecs) {
       //if (container == "webm") { return true; }
-      return MediaSource.isTypeSupported("video/" + container + ";codecs=\"" + codecs + "\"");
+      return MediaSource.isTypeSupported('video/' + container + ';codecs="' + codecs + '"');
     }
 
     source.supportedCodecs = [];
@@ -68,7 +68,7 @@ awmplayers.mews = {
     }
     if ((!AwmVideo.options.forceType) && (!AwmVideo.options.forcePlayer)) { //unless we force mews, skip this players if not both video and audio are supported
       if (source.supportedCodecs.length < source.simul_tracks) {
-        AwmVideo.log("Not enough playable tracks for this source");
+        AwmVideo.log('Not enough playable tracks for this source');
         return false;
       }
     }
@@ -81,40 +81,40 @@ var p = awmplayers.mews.player;
 p.prototype = new AwmPlayer();
 p.prototype.build = function (AwmVideo, callback) {
 
-  var video = document.createElement("video");
-  video.setAttribute("playsinline", ""); //iphones. effin' iphones.
+  var video = document.createElement('video');
+  video.setAttribute('playsinline', ''); //iphones. effin' iphones.
 
   //apply options
-  var attrs = ["autoplay", "loop", "poster"];
+  var attrs = ['autoplay', 'loop', 'poster'];
   for (var i in attrs) {
     var attr = attrs[i];
     if (AwmVideo.options[attr]) {
-      video.setAttribute(attr, (AwmVideo.options[attr] === true ? "" : AwmVideo.options[attr]));
+      video.setAttribute(attr, (AwmVideo.options[attr] === true ? '' : AwmVideo.options[attr]));
     }
   }
   if (AwmVideo.options.muted) {
     video.muted = true; //don't use attribute because of Chrome bug
   }
-  if (AwmVideo.info.type == "live") {
+  if (AwmVideo.info.type == 'live') {
     video.loop = false;
   }
-  if (AwmVideo.options.controls == "stock") {
-    video.setAttribute("controls", "");
+  if (AwmVideo.options.controls == 'stock') {
+    video.setAttribute('controls', '');
   }
-  video.setAttribute("crossorigin", "anonymous");
+  video.setAttribute('crossorigin', 'anonymous');
   this.setSize = function (size) {
-    video.style.width = size.width + "px";
-    video.style.height = size.height + "px";
+    video.style.width = size.width + 'px';
+    video.style.height = size.height + 'px';
   };
 
   var player = this;
-  player.name = "mews";
+  player.name = 'mews';
   //player.debugging = true;
   //player.debugging = "dl"; //download appended data on ms close
 
   //this function is called both when the websocket is ready and the media source is ready - both should be open to proceed
   function checkReady() {
-    if ((player.ws.readyState == player.ws.OPEN) && (player.ms.readyState == "open") && (player.sb)) {
+    if ((player.ws.readyState == player.ws.OPEN) && (player.ms.readyState == 'open') && (player.sb)) {
       callback(video);
       if (AwmVideo.options.autoplay) {
         player.api.play();
@@ -135,7 +135,7 @@ p.prototype.build = function (AwmVideo, callback) {
         if (player.debugging) {
           console.error('ms close', e);
         }
-        send({type: "stop"}); //stop sending data please something went wrong
+        send({ type: 'stop' }); //stop sending data please something went wrong
       };
       player.ms.onsourceended = function (e) {
         if (player.debugging) {
@@ -179,13 +179,13 @@ p.prototype.build = function (AwmVideo, callback) {
 
           downloadBlob(d, 'appended.mp4.bin', 'application/octet-stream');
         }
-        send({type: "stop"}); //stop sending data please something went wrong
+        send({ type: 'stop' }); //stop sending data please something went wrong
       };
     });
-  }
+  };
   this.msinit().then(function () {
     if (player.sb) {
-      AwmVideo.log("Not creating source buffer as one already exists.");
+      AwmVideo.log('Not creating source buffer as one already exists.');
       return;
     }
     checkReady();
@@ -193,14 +193,14 @@ p.prototype.build = function (AwmVideo, callback) {
   this.onsbinit = [];
   this.sbinit = function (codecs) {
     if (!codecs) {
-      AwmVideo.showError("Did not receive any codec: nothing to initialize.");
+      AwmVideo.showError('Did not receive any codec: nothing to initialize.');
       return;
     }
 
     //console.log("sourcebuffers",player.ms.sourceBuffers.length);
     //console.log("sb init","video/"+AwmVideo.source.type.split("/")[2]+";codecs=\""+codecs.join(",")+"\"");
-    player.sb = player.ms.addSourceBuffer("video/" + AwmVideo.source.type.split("/")[2] + ";codecs=\"" + codecs.join(",") + "\"");
-    player.sb.mode = "segments"; //the fragments will be put in the buffer at the correct time: much better behavior when seeking / not playing from 0s
+    player.sb = player.ms.addSourceBuffer('video/' + AwmVideo.source.type.split('/')[2] + ';codecs="' + codecs.join(',') + '"');
+    player.sb.mode = 'segments'; //the fragments will be put in the buffer at the correct time: much better behavior when seeking / not playing from 0s
 
     //save the current source buffer codecs
     player.sb._codecs = codecs;
@@ -213,9 +213,9 @@ p.prototype.build = function (AwmVideo, callback) {
     player.sb.appending = null;
     player.sb.appended = [];
     var n = 0;
-    player.sb.addEventListener("updateend", function () {
+    player.sb.addEventListener('updateend', function () {
       if (!player.sb) {
-        AwmVideo.log("Reached updateend but the source buffer is " + JSON.stringify(player.sb) + ". ");
+        AwmVideo.log('Reached updateend but the source buffer is ' + JSON.stringify(player.sb) + '. ');
         return;
       }
       //player.sb._busy = true;
@@ -241,7 +241,7 @@ p.prototype.build = function (AwmVideo, callback) {
         //console.log("do_funcs",Number(i)+1,"/",do_funcs.length);
         if (!player.sb) {
           if (player.debugging) {
-            console.warn("I was doing on_updateend but the sb was reset");
+            console.warn('I was doing on_updateend but the sb was reset');
           }
           break;
         }
@@ -249,7 +249,7 @@ p.prototype.build = function (AwmVideo, callback) {
           //it's updating again >_>
           do_on_updateend.concat(do_funcs.slice(i)); //add the remaining functions to do_on_updateend
           if (player.debugging) {
-            console.warn("I was doing on_updateend but was interrupted");
+            console.warn('I was doing on_updateend but was interrupted');
           }
           break;
         }
@@ -269,10 +269,10 @@ p.prototype.build = function (AwmVideo, callback) {
       }
     });
     player.sb.error = function (e) {
-      console.error("sb error", e);
+      console.error('sb error', e);
     };
     player.sb.abort = function (e) {
-      console.error("sb abort", e);
+      console.error('sb abort', e);
     };
 
     player.sb._doNext = function (func) {
@@ -284,7 +284,7 @@ p.prototype.build = function (AwmVideo, callback) {
       } else {
         func();
       }
-    }
+    };
     player.sb._append = function (data) {
       if (!data) {
         return;
@@ -296,7 +296,7 @@ p.prototype.build = function (AwmVideo, callback) {
         player.sb.appending = new Uint8Array(data);
       }
       if (player.sb._busy) {
-        if (player.debugging) console.warn("I wanted to append data, but now I won't because the thingy was still busy. Putting it back in the queue.");
+        if (player.debugging) console.warn('I wanted to append data, but now I won\'t because the thingy was still busy. Putting it back in the queue.');
         player.sb.queue.unshift(data);
         return;
       }
@@ -304,19 +304,17 @@ p.prototype.build = function (AwmVideo, callback) {
       //console.log("appendBuffer");
       try {
         player.sb.appendBuffer(data);
-      }
-      catch(e){
+      } catch (e) {
         switch (e.name) {
-          case "QuotaExceededError": {
+          case 'QuotaExceededError': {
             if (video.buffered.length) {
               if (video.currentTime - video.buffered.start(0) > 1) {
                 //clear as much from the buffer as we can
-                AwmVideo.log("Triggered QuotaExceededError: cleaning up "+(Math.round((video.currentTime - video.buffered.start(0) - 1)*10)/10)+"s");
+                AwmVideo.log('Triggered QuotaExceededError: cleaning up ' + (Math.round((video.currentTime - video.buffered.start(0) - 1) * 10) / 10) + 's');
                 player.sb._clean(1);
-              }
-              else {
-                var bufferEnd = video.buffered.end(video.buffered.length-1);
-                AwmVideo.log("Triggered QuotaExceededError but there is nothing to clean: skipping ahead "+(Math.round((bufferEnd - video.currentTime)*10)/10)+"s");
+              } else {
+                var bufferEnd = video.buffered.end(video.buffered.length - 1);
+                AwmVideo.log('Triggered QuotaExceededError but there is nothing to clean: skipping ahead ' + (Math.round((bufferEnd - video.currentTime) * 10) / 10) + 's');
                 video.currentTime = bufferEnd;
               }
               player.sb._busy = false;
@@ -325,7 +323,7 @@ p.prototype.build = function (AwmVideo, callback) {
             }
             break;
           }
-          case "InvalidStateError": {
+          case 'InvalidStateError': {
             player.api.pause(); //playback is borked, so stop downloading more data
             if (AwmVideo.video.error) {
               //Failed to execute 'appendBuffer' on 'SourceBuffer': The HTMLMediaElement.error attribute is not null
@@ -338,7 +336,7 @@ p.prototype.build = function (AwmVideo, callback) {
         }
         AwmVideo.showError(e.message);
       }
-    }
+    };
 
     //we're initing the source buffer and there is a msg queue of data built up before the buffer was ready. Start by adding these data fragments to the source buffer
     if (player.msgqueue) {
@@ -361,10 +359,10 @@ p.prototype.build = function (AwmVideo, callback) {
         if (player.msgqueue.length == 0) {
           player.msgqueue = false;
         }
-        AwmVideo.log("The newly initialized source buffer was filled with data from a seperate message queue." + (player.msgqueue ? " " + player.msgqueue.length + " more message queue(s) remain." : ""));
+        AwmVideo.log('The newly initialized source buffer was filled with data from a seperate message queue.' + (player.msgqueue ? ' ' + player.msgqueue.length + ' more message queue(s) remain.' : ''));
         if (do_do) {
-          AwmVideo.log("The seperate message queue was empty; manually triggering any onupdateend functions");
-          player.sb.dispatchEvent(new Event("updateend"));
+          AwmVideo.log('The seperate message queue was empty; manually triggering any onupdateend functions');
+          player.sb.dispatchEvent(new Event('updateend'));
         }
       }
     }
@@ -378,7 +376,7 @@ p.prototype.build = function (AwmVideo, callback) {
           player.sb.remove(0, Math.max(0.1, video.currentTime - keepaway));
         });
       }
-    }
+    };
 
     if (player.onsbinit.length) {
       player.onsbinit.shift()();
@@ -392,12 +390,12 @@ p.prototype.build = function (AwmVideo, callback) {
     return new Promise(function (resolve) {
       //prepare websocket (both data and messages)
       this.ws = new WebSocket(AwmVideo.source.url);
-      this.ws.binaryType = "arraybuffer";
+      this.ws.binaryType = 'arraybuffer';
 
       this.ws.s = this.ws.send;
-      this.ws.send = function(){
+      this.ws.send = function () {
         if (this.readyState == 1) {
-          return this.s.apply(this,arguments);
+          return this.s.apply(this, arguments);
         }
         return false;
       };
@@ -407,42 +405,44 @@ p.prototype.build = function (AwmVideo, callback) {
         resolve();
       };
       this.ws.onerror = function () {
-        AwmVideo.showError("MP4 over WS: websocket error");
+        AwmVideo.showError('MP4 over WS: websocket error');
       };
       this.ws.onclose = function () {
-        AwmVideo.log("MP4 over WS: websocket closed");
+        AwmVideo.log('MP4 over WS: websocket closed');
 
-        if (this.wasConnected && (!AwmVideo.destroyed) && (AwmVideo.state == "Stream is online")) {
-          AwmVideo.log("MP4 over WS: reopening websocket");
-          player.wsconnect().then(function(){
+        if (this.wasConnected && (!AwmVideo.destroyed) && (AwmVideo.state == 'Stream is online')) {
+          AwmVideo.log('MP4 over WS: reopening websocket');
+          player.wsconnect().then(function () {
             if (!player.sb) {
               //retrieve codec info
-              var f = function(msg){
+              var f = function (msg) {
                 //got codec data, set up source buffer
 
-                if (!player.sb) { player.sbinit(msg.data.codecs); }
-                else { player.api.play(); }
+                if (!player.sb) {
+                  player.sbinit(msg.data.codecs);
+                } else {
+                  player.api.play();
+                }
 
-                player.ws.removeListener("codec_data",f);
+                player.ws.removeListener('codec_data', f);
               };
-              player.ws.addListener("codec_data",f);
-              send({type:"request_codec_data",supported_codecs:AwmVideo.source.supportedCodecs});
-            }
-            else {
+              player.ws.addListener('codec_data', f);
+              send({ type: 'request_codec_data', supported_codecs: AwmVideo.source.supportedCodecs });
+            } else {
               player.api.play();
             }
-          },function(){
-            AwmVideo.error("Lost connection to the Media Server");
+          }, function () {
+            AwmVideo.error('Lost connection to the Media Server');
           });
         }
       };
 
-      this.ws.timeOut = AwmVideo.timers.start(function(){
+      this.ws.timeOut = AwmVideo.timers.start(function () {
         if (player.ws.readyState == 0) {
-          AwmVideo.log("MP4 over WS: socket timeout - try next combo");
+          AwmVideo.log('MP4 over WS: socket timeout - try next combo');
           AwmVideo.nextCombo();
         }
-      },5e3);
+      }, 5e3);
 
       this.ws.listeners = {}; //kind of event listener list for websocket messages
       this.ws.addListener = function (type, f) {
@@ -461,32 +461,33 @@ p.prototype.build = function (AwmVideo, callback) {
         }
         this.listeners[type].splice(i, 1);
         return true;
-      }
+      };
       player.msgqueue = false;
       var requested_rate = 1;
       this.ws.onmessage = function (e) {
         if (!e.data) {
-          throw "Received invalid data";
+          throw 'Received invalid data';
         }
-        if (typeof e.data == "string") {
+        if (typeof e.data == 'string') {
           var msg = JSON.parse(e.data);
-          if (player.debugging && (msg.type != "on_time")) {
-            console.log("ws message", msg);
+          if (player.debugging && (msg.type != 'on_time')) {
+            console.log('ws message', msg);
           }
           switch (msg.type) {
-            case "on_stop": {
+            case 'on_stop': {
               //the last fragment has been added to the buffer
               var eObj;
-              eObj = AwmUtil.event.addListener(video, "waiting", function () {
+              eObj = AwmUtil.event.addListener(video, 'waiting', function () {
                 player.sb.paused = true;
                 AwmUtil.event.send('ended', null, video);
                 AwmUtil.event.removeListener(eObj);
               });
 
-              player.ws.onclose = function(){}; //don't reopen websocket, just close, it's okay, rly
+              player.ws.onclose = function () {
+              }; //don't reopen websocket, just close, it's okay, rly
               break;
             }
-            case "on_time": {
+            case 'on_time': {
               var buffer = msg.data.current - video.currentTime * 1e3;
               var serverDelay = player.ws.serverDelay.get();
               var desiredBuffer = Math.max(100 + serverDelay, serverDelay * 2);
@@ -511,26 +512,26 @@ p.prototype.build = function (AwmVideo, callback) {
               }
 
               if (!player.sb) {
-                AwmVideo.log("Received on_time, but the source buffer is being cleared right now. Ignoring.");
+                AwmVideo.log('Received on_time, but the source buffer is being cleared right now. Ignoring.');
                 break;
               }
 
               if (player.sb._duration != msg.data.end * 1e-3) {
                 player.sb._duration = msg.data.end * 1e-3;
-                AwmUtil.event.send("durationchange", null, AwmVideo.video);
+                AwmUtil.event.send('durationchange', null, AwmVideo.video);
               }
               AwmVideo.info.meta.buffer_window = msg.data.end - msg.data.begin;
               player.sb.paused = false;
 
-              if (AwmVideo.info.type == "live") {
+              if (AwmVideo.info.type == 'live') {
                 if (requested_rate == 1) {
-                  if (msg.data.play_rate_curr == "auto") {
+                  if (msg.data.play_rate_curr == 'auto') {
                     if (video.currentTime > 0) { //give it some time to seek to live first when starting up
                       //assume we want to be as live as possible
                       if (buffer > desiredBufferwithJitter * 2) {
                         requested_rate = 1 + Math.min(1, ((buffer - desiredBufferwithJitter) / desiredBufferwithJitter)) * 0.08;
                         video.playbackRate *= requested_rate;
-                        AwmVideo.log("Our buffer ("+Math.round(buffer)+"ms) is big (>"+Math.round(desiredBufferwithJitter*2)+"ms), so increase the playback speed to "+(Math.round(requested_rate*100)/100)+" to catch up.");
+                        AwmVideo.log('Our buffer (' + Math.round(buffer) + 'ms) is big (>' + Math.round(desiredBufferwithJitter * 2) + 'ms), so increase the playback speed to ' + (Math.round(requested_rate * 100) / 100) + ' to catch up.');
 
                       } else if (buffer < desiredBuffer / 2) {
                         requested_rate = 1 + Math.min(1, ((buffer - desiredBuffer) / desiredBuffer)) * 0.08;
@@ -556,7 +557,7 @@ p.prototype.build = function (AwmVideo, callback) {
               } else {
                 //it's VoD, change the rate at which the server sends data to try and keep the buffer small
                 if (requested_rate == 1) {
-                  if (msg.data.play_rate_curr == "auto") {
+                  if (msg.data.play_rate_curr == 'auto') {
                     if (buffer < desiredBuffer / 2) {
                       if (buffer < -10e3) {
                         //seek to play point
@@ -564,28 +565,28 @@ p.prototype.build = function (AwmVideo, callback) {
                       } else {
                         //negative buffer? ask for faster delivery
                         requested_rate = 2;
-                        AwmVideo.log("Our buffer is negative, so request a faster download rate.");
-                        send({type: "set_speed", play_rate: requested_rate});
+                        AwmVideo.log('Our buffer is negative, so request a faster download rate.');
+                        send({ type: 'set_speed', play_rate: requested_rate });
                       }
                     } else if (buffer - desiredBuffer > desiredBuffer) {
-                      AwmVideo.log("Our buffer is big, so request a slower download rate.");
+                      AwmVideo.log('Our buffer is big, so request a slower download rate.');
                       requested_rate = 0.5;
-                      send({type: "set_speed", play_rate: requested_rate});
+                      send({ type: 'set_speed', play_rate: requested_rate });
                     }
                   }
                 } else if (requested_rate > 1) {
                   if (buffer > desiredBuffer) {
                     //we have enough buffer, ask for real time delivery
-                    send({type: "set_speed", play_rate: "auto"});
+                    send({ type: 'set_speed', play_rate: 'auto' });
                     requested_rate = 1;
-                    AwmVideo.log("The buffer is big enough, so ask for realtime download rate.");
+                    AwmVideo.log('The buffer is big enough, so ask for realtime download rate.');
                   }
                 } else { //requested_rate < 1
                   if (buffer < desiredBuffer) {
                     //we have a small enough bugger, ask for real time delivery
-                    send({type: "set_speed", play_rate: "auto"});
+                    send({ type: 'set_speed', play_rate: 'auto' });
                     requested_rate = 1;
-                    AwmVideo.log("The buffer is small enough, so ask for realtime download rate.");
+                    AwmVideo.log('The buffer is small enough, so ask for realtime download rate.');
                   }
                 }
               }
@@ -593,12 +594,12 @@ p.prototype.build = function (AwmVideo, callback) {
               notifyIfTrackChanged(msg.data.tracks);
 
               if (AwmVideo.reporting && msg.data.tracks) {
-                AwmVideo.reporting.stats.d.tracks = msg.data.tracks.join(",");
+                AwmVideo.reporting.stats.d.tracks = msg.data.tracks.join(',');
               }
 
               break;
             }
-            case "tracks": {
+            case 'tracks': {
               //check if all codecs are equal to the ones we were using before
               function checkEqual(arr1, arr2) {
                 if (!arr2) {
@@ -617,7 +618,7 @@ p.prototype.build = function (AwmVideo, callback) {
 
 
               if (checkEqual(player.last_codecs ? player.last_codecs : player.sb._codecs, msg.data.codecs)) {
-                if (player.debugging) console.log("reached switching point");
+                if (player.debugging) console.log('reached switching point');
                 if (msg.data.current > 0) {
                   if (player.sb) { //if sb is being cleared at the moment, don't bother
                     player.sb._do(function () { //once the source buffer is done updating the current segment, clear the specified interval from the buffer
@@ -626,11 +627,11 @@ p.prototype.build = function (AwmVideo, callback) {
                   }
                 }
 
-                AwmVideo.log("Player switched tracks, keeping source buffer as codecs are the same as before.");
+                AwmVideo.log('Player switched tracks, keeping source buffer as codecs are the same as before.');
               } else {
                 if (player.debugging) {
-                  console.warn("Different codecs!");
-                  console.warn("video time", video.currentTime, "waiting until", msg.data.current * 1e-3);
+                  console.warn('Different codecs!');
+                  console.warn('video time', video.currentTime, 'waiting until', msg.data.current * 1e-3);
                 }
                 player.last_codecs = msg.data.codecs;
                 //start gathering messages in a new msg queue. They won't be appended to the current source buffer
@@ -650,31 +651,31 @@ p.prototype.build = function (AwmVideo, callback) {
                         player.ms.removeSourceBuffer(player.sb);
                         player.sb = null;
                         var t = (msg.data.current * 1e-3).toFixed(3); //rounded because of floating point issues
-                        video.src = "";
+                        video.src = '';
                         player.ms.onsourceclose = null;
                         player.ms.onsourceended = null;
                         //console.log("sb murdered");
                         if (player.debugging && remaining_do_on_updateend && remaining_do_on_updateend.length) {
-                          console.warn("There are do_on_updateend functions queued, which I *should* re-apply after clearing the sb.");
+                          console.warn('There are do_on_updateend functions queued, which I *should* re-apply after clearing the sb.');
                         }
 
                         player.msinit().then(function () {
                           player.sbinit(msg.data.codecs);
                           player.sb.do_on_updateend = remaining_do_on_updateend;
 
-                          var e = AwmUtil.event.addListener(video, "loadedmetadata", function () {
-                            AwmVideo.log("Buffer cleared, setting playback position to " + AwmUtil.format.time(t, {ms: true}));
+                          var e = AwmUtil.event.addListener(video, 'loadedmetadata', function () {
+                            AwmVideo.log('Buffer cleared, setting playback position to ' + AwmUtil.format.time(t, { ms: true }));
 
                             var f = function () {
                               video.currentTime = t;
                               if (video.currentTime < t) {
                                 player.sb._doNext(f);
                                 if (player.debugging) {
-                                  console.log("Could not set playback position");
+                                  console.log('Could not set playback position');
                                 }
                               } else {
                                 if (player.debugging) {
-                                  console.log("Set playback position to " + AwmUtil.format.time(t, {ms: true}));
+                                  console.log('Set playback position to ' + AwmUtil.format.time(t, { ms: true }));
                                 }
                                 var p = function () {
                                   player.sb._doNext(function () {
@@ -696,7 +697,7 @@ p.prototype.build = function (AwmVideo, callback) {
                                 };
                                 p();
                               }
-                            }
+                            };
                             f();
 
                             AwmUtil.event.removeListener(e);
@@ -708,14 +709,14 @@ p.prototype.build = function (AwmVideo, callback) {
                     });
                   } else {
                     if (player.debugging) {
-                      console.warn("sb not available to do clear");
+                      console.warn('sb not available to do clear');
                     }
                     player.onsbinit.push(clear);
                   }
                 };
 
                 if (!msg.data.codecs || !msg.data.codecs.length) {
-                  AwmVideo.showError("Track switch does not contain any codecs, aborting.");
+                  AwmVideo.showError('Track switch does not contain any codecs, aborting.');
                   //reset setTracks to auto
                   AwmVideo.options.setTracks = false;
                   clear();
@@ -723,7 +724,7 @@ p.prototype.build = function (AwmVideo, callback) {
                 }
 
                 if (player.debugging) {
-                  console.warn("reached switching point", msg.data.current * 1e-3, AwmUtil.format.time(msg.data.current * 1e-3));
+                  console.warn('reached switching point', msg.data.current * 1e-3, AwmUtil.format.time(msg.data.current * 1e-3));
                 }
                 clear();
 
@@ -736,7 +737,7 @@ p.prototype.build = function (AwmVideo, callback) {
             case 'info': {
               notifyIfTrackChanged(msg.data.tracks);
 
-              break
+              break;
             }
           }
           if (msg.type in this.listeners) {
@@ -750,7 +751,7 @@ p.prototype.build = function (AwmVideo, callback) {
         if (data) {
           if (player.monitor && player.monitor.bitCounter) {
             for (var i in player.monitor.bitCounter) {
-              player.monitor.bitCounter[i] += e.data.byteLength*8;
+              player.monitor.bitCounter[i] += e.data.byteLength * 8;
             }
           }
           if ((player.sb) && (!player.msgqueue)) {
@@ -771,9 +772,9 @@ p.prototype.build = function (AwmVideo, callback) {
           }
         } else {
           //console.warn("no data, wut?",data,new Uint8Array(e.data));
-          AwmVideo.log("Expecting data from websocket, but received none?!");
+          AwmVideo.log('Expecting data from websocket, but received none?!');
         }
-      }
+      };
 
 
       this.ws.serverDelay = {
@@ -781,14 +782,14 @@ p.prototype.build = function (AwmVideo, callback) {
         log: function (type) {
           var responseType = false;
           switch (type) {
-            case "seek":
-            case "set_speed": {
+            case 'seek':
+            case 'set_speed': {
               //wait for cmd.type
               responseType = type;
               break;
             }
-            case "request_codec_data": {
-              responseType = "codec_data";
+            case 'request_codec_data': {
+              responseType = 'codec_data';
               break;
             }
             default: {
@@ -839,10 +840,10 @@ p.prototype.build = function (AwmVideo, callback) {
       player.sbinit(msg.data.codecs);
 
       checkReady();
-      player.ws.removeListener("codec_data", f);
+      player.ws.removeListener('codec_data', f);
     };
-    this.ws.addListener("codec_data", f);
-    send({type: "request_codec_data", supported_codecs: AwmVideo.source.supportedCodecs});
+    this.ws.addListener('codec_data', f);
+    send({ type: 'request_codec_data', supported_codecs: AwmVideo.source.supportedCodecs });
   }.bind(this));
 
   function notifyIfTrackChanged(tracks) {
@@ -865,7 +866,7 @@ p.prototype.build = function (AwmVideo, callback) {
 
   function send(cmd) {
     if (!player.ws) {
-      throw "No websocket to send to";
+      throw 'No websocket to send to';
     }
     if (player.ws.readyState >= player.ws.CLOSING) {
       //throw "WebSocket has been closed already.";
@@ -875,7 +876,7 @@ p.prototype.build = function (AwmVideo, callback) {
       return;
     }
     if (player.debugging) {
-      console.log("ws send", cmd);
+      console.log('ws send', cmd);
     }
 
     player.ws.serverDelay.log(cmd.type);
@@ -898,10 +899,10 @@ p.prototype.build = function (AwmVideo, callback) {
       return new Promise(function (resolve, reject) {
         var f = function (e) {
           if (!player.sb) {
-            AwmVideo.log("Attempting to play, but the source buffer is being cleared. Waiting for next on_time.");
+            AwmVideo.log('Attempting to play, but the source buffer is being cleared. Waiting for next on_time.');
             return;
           }
-          if (AwmVideo.info.type == "live") {
+          if (AwmVideo.info.type == 'live') {
             if (skipToLive || (video.currentTime == 0)) {
               var g = function () {
                 if (video.buffered.length) {
@@ -910,32 +911,32 @@ p.prototype.build = function (AwmVideo, callback) {
                   if (buffern !== false) {
                     if ((video.buffered.start(buffern) > video.currentTime) || (video.buffered.end(buffern) < video.currentTime)) {
                       video.currentTime = e.data.current * 1e-3;
-                      AwmVideo.log("Setting live playback position to " + AwmUtil.format.time(video.currentTime));
+                      AwmVideo.log('Setting live playback position to ' + AwmUtil.format.time(video.currentTime));
                     }
                     video.play().then(resolve).catch(reject);
                     player.sb.paused = false;
-                    player.sb.removeEventListener("updateend", g);
+                    player.sb.removeEventListener('updateend', g);
                   }
                 }
               };
-              player.sb.addEventListener("updateend", g);
+              player.sb.addEventListener('updateend', g);
             } else {
               player.sb.paused = false;
               video.play().then(resolve).catch(reject);
             }
-            player.ws.removeListener("on_time", f);
+            player.ws.removeListener('on_time', f);
           } else if (e.data.current > video.currentTime) {
             player.sb.paused = false;
-            video.currentTime = e.data.current*1e-3;
+            video.currentTime = e.data.current * 1e-3;
             video.play().then(resolve).catch(reject);
-            player.ws.removeListener("on_time", f);
+            player.ws.removeListener('on_time', f);
           }
         };
-        player.ws.addListener("on_time", f);
+        player.ws.addListener('on_time', f);
 
-        var cmd = {type: "play"};
+        var cmd = { type: 'play' };
         if (skipToLive) {
-          cmd.seek_time = "live";
+          cmd.seek_time = 'live';
         }
         send(cmd);
       });
@@ -948,11 +949,13 @@ p.prototype.build = function (AwmVideo, callback) {
       }
     },
     setTracks: function (obj) {
-      if (!AwmUtil.object.keys(obj).length) { return; }
-      obj.type = "tracks";
+      if (!AwmUtil.object.keys(obj).length) {
+        return;
+      }
+      obj.type = 'tracks';
       obj = AwmUtil.object.extend({
-        type: "tracks",
-      //  seek_time: Math.max(0, video.currentTime * 1e3 - (500 + player.ws.serverDelay.get()))
+        type: 'tracks',
+        //  seek_time: Math.max(0, video.currentTime * 1e3 - (500 + player.ws.serverDelay.get()))
       }, obj);
       send(obj);
     },
@@ -972,46 +975,46 @@ p.prototype.build = function (AwmVideo, callback) {
   };
 
   //override seeking
-  Object.defineProperty(this.api, "currentTime", {
+  Object.defineProperty(this.api, 'currentTime', {
     get: function () {
       return video.currentTime;
     },
     set: function (value) {
-      AwmUtil.event.send("seeking", value, video);
+      AwmUtil.event.send('seeking', value, video);
       send({ type: 'seek', seek_time: Math.round(Math.max(0, value * 1e3 - (250 + player.ws.serverDelay.get()))) }); //safety margin for server latency
       //set listener "seek"
       var onseek = function () {
-        player.ws.removeListener("seek", onseek);
+        player.ws.removeListener('seek', onseek);
         var ontime = function (e) {
-          player.ws.removeListener("on_time", ontime);
+          player.ws.removeListener('on_time', ontime);
           //in the first on_time, assume that the data were getting is where we want to be
           value = (e.data.current * 1e-3).toFixed(3);
           var f = function () {
             video.currentTime = value;
             if (video.currentTime != value) {
               if (player.debugging) {
-                AwmVideo.log("Failed to seek, wanted:",value,"got:",video.currentTime.toFixed(3));
+                AwmVideo.log('Failed to seek, wanted:', value, 'got:', video.currentTime.toFixed(3));
                 player.sb._doNext(f);
               }
               player.sb._doNext(f);
             }
-          }
+          };
           f();
         };
-        player.ws.addListener("on_time", ontime);
-      }
-      player.ws.addListener("seek", onseek);
+        player.ws.addListener('on_time', ontime);
+      };
+      player.ws.addListener('seek', onseek);
       video.currentTime = value;
-      AwmVideo.log("Seeking to " + AwmUtil.format.time(value, {ms: true}) + " (" + value + ")");
+      AwmVideo.log('Seeking to ' + AwmUtil.format.time(value, { ms: true }) + ' (' + value + ')');
     }
   });
   //override duration
-  Object.defineProperty(this.api, "duration", {
+  Object.defineProperty(this.api, 'duration', {
     get: function () {
       return player.sb ? player.sb._duration : 1;
     }
   });
-  Object.defineProperty(this.api, "playbackRate", {
+  Object.defineProperty(this.api, 'playbackRate', {
     get: function () {
       return video.playbackRate;
     },
@@ -1019,8 +1022,8 @@ p.prototype.build = function (AwmVideo, callback) {
       var f = function (msg) {
         video.playbackRate = msg.data.play_rate;
       };
-      player.ws.addListener("set_speed", f);
-      send({type: "set_speed", play_rate: (value == 1 ? "auto" : value)});
+      player.ws.addListener('set_speed', f);
+      send({ type: 'set_speed', play_rate: (value == 1 ? 'auto' : value) });
     }
   });
 
@@ -1038,22 +1041,22 @@ p.prototype.build = function (AwmVideo, callback) {
   }
 
   var list = [
-    "volume",
-    "buffered",
-    "muted",
-    "loop",
-    "paused",
-    "error",
-    "textTracks",
-    "webkitDroppedFrameCount",
-    "webkitDecodedFrameCount"
+    'volume',
+    'buffered',
+    'muted',
+    'loop',
+    'paused',
+    'error',
+    'textTracks',
+    'webkitDroppedFrameCount',
+    'webkitDecodedFrameCount'
   ];
   for (var i in list) {
     reroute(list[i]);
   }
 
   //loop
-  AwmUtil.event.addListener(video, "ended", function () {
+  AwmUtil.event.addListener(video, 'ended', function () {
     if (player.api.loop) {
       player.api.currentTime = 0;
       player.sb._do(function () {
@@ -1063,14 +1066,14 @@ p.prototype.build = function (AwmVideo, callback) {
   });
 
   var seeking = false;
-  AwmUtil.event.addListener(video, "seeking", function () {
+  AwmUtil.event.addListener(video, 'seeking', function () {
     seeking = true;
-    var seeked = AwmUtil.event.addListener(video, "seeked", function () {
+    var seeked = AwmUtil.event.addListener(video, 'seeked', function () {
       seeking = false;
       AwmUtil.event.removeListener(seeked);
     });
   });
-  AwmUtil.event.addListener(video, "waiting", function () {
+  AwmUtil.event.addListener(video, 'waiting', function () {
     //check if there is a gap in the buffers, and if so, jump it
     if (seeking) {
       return;
@@ -1078,7 +1081,7 @@ p.prototype.build = function (AwmVideo, callback) {
     var buffern = player.findBuffer(video.currentTime);
     if (buffern !== false) {
       if ((buffern + 1 < video.buffered.length) && (video.buffered.start(buffern + 1) - video.currentTime < 10e3)) {
-        AwmVideo.log("Skipped over buffer gap (from " + AwmUtil.format.time(video.currentTime) + " to " + AwmUtil.format.time(video.buffered.start(buffern + 1)) + ")");
+        AwmVideo.log('Skipped over buffer gap (from ' + AwmUtil.format.time(video.currentTime) + ' to ' + AwmUtil.format.time(video.buffered.start(buffern + 1)) + ')');
         video.currentTime = video.buffered.start(buffern + 1);
       }
     }
@@ -1098,7 +1101,7 @@ p.prototype.build = function (AwmVideo, callback) {
   });
 
   if (player.debugging) {
-    AwmUtil.event.addListener(video, "waiting", function () {
+    AwmUtil.event.addListener(video, 'waiting', function () {
       //check the buffer available
       var buffers = [];
       var contained = false;
@@ -1122,42 +1125,41 @@ p.prototype.build = function (AwmVideo, callback) {
   this.ABR = {
     size: null,
     bitrate: null,
-    generateString: function(type,raw){
+    generateString: function (type, raw) {
       switch (type) {
-        case "size": {
-          return "~"+[raw.width,raw.height].join("x");
+        case 'size': {
+          return '~' + [raw.width, raw.height].join('x');
         }
-        case "bitrate": {
-          return "<"+Math.round(raw)+"bps,minbps";
+        case 'bitrate': {
+          return '<' + Math.round(raw) + 'bps,minbps';
         }
         default: {
-          throw "Unknown ABR type";
+          throw 'Unknown ABR type';
         }
       }
     },
-    request: function(type,value){
+    request: function (type, value) {
       this[type] = value;
 
       var request = [];
       if (this.bitrate !== null) {
-        request.push(this.generateString("bitrate",this.bitrate));
+        request.push(this.generateString('bitrate', this.bitrate));
       }
       if (this.size !== null) {
-        request.push(this.generateString("size",this.size));
-      }
-      else {
-        request.push("maxbps");
+        request.push(this.generateString('size', this.size));
+      } else {
+        request.push('maxbps');
       }
 
       return player.api.setTracks({
-        video: request.join(",|")
+        video: request.join(',|')
       });
     }
-  }
+  };
 
-  this.api.ABR_resize = function(size){
-    AwmVideo.log("Requesting the video track with the resolution that best matches the player size");
-    player.ABR.request("size",size);
+  this.api.ABR_resize = function (size) {
+    AwmVideo.log('Requesting the video track with the resolution that best matches the player size');
+    player.ABR.request('size', size);
   };
   //ABR: monitor playback issues and switch to lower bitrate track if available
   //NB: this ABR requests a lower bitrate if needed, but it can never go back up
@@ -1167,7 +1169,7 @@ p.prototype.build = function (AwmVideo, callback) {
     currentBps: null,
     nWaiting: 0,
     nWaitingThreshold: 3,
-    listener: AwmVideo.options.ABR_bitrate ? AwmUtil.event.addListener(video,"waiting",function(){
+    listener: AwmVideo.options.ABR_bitrate ? AwmUtil.event.addListener(video, 'waiting', function () {
       player.monitor.nWaiting++;
 
       if (player.monitor.nWaiting >= player.monitor.nWaitingThreshold) {
@@ -1207,8 +1209,9 @@ p.prototype.build = function (AwmVideo, callback) {
         //a video track was selected by the user, do not change it
         return;
       }
-      AwmVideo.log("ABR threshold triggered, requesting lower quality");
-      player.ABR.request("bitrate",this.currentBps);    }
+      AwmVideo.log('ABR threshold triggered, requesting lower quality');
+      player.ABR.request('bitrate', this.currentBps);
+    }
   };
 
   this.monitor.getBitRate();
