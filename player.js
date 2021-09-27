@@ -13,7 +13,7 @@ function AwmVideo(streamName, options) {
   if (!options) {
     options = {};
   }
-  if (typeof awmoptions != "undefined") {
+  if (typeof awmoptions != 'undefined') {
     options = AwmUtil.object.extend(AwmUtil.object.extend({}, awmoptions), options);
   }
   options = AwmUtil.object.extend({
@@ -39,6 +39,8 @@ function AwmVideo(streamName, options) {
     height: false,        // No set height
     maxwidth: false,      // No max width (apart from targets dimensions)
     maxheight: false,     // No max height (apart from targets dimensions)
+    ABR_resize: false,     //for supporting wrappers: when the player resizes, request a video track that matches the resolution best
+    ABR_bitrate: false,    //for supporting wrappers: when there are playback issues, request a lower bitrate video track
     AwmVideoObject: false, // No reference object is passed
     metrics: false // No metrics module passed. Will Use default metric module
   }, options);
@@ -50,10 +52,17 @@ function AwmVideo(streamName, options) {
   this.options = options;
   this.stream = streamName;
   this.info = false;
+
+  if (!window.AwmInstances) {
+    window.AwmInstances = 0;
+  }
+  window.AwmInstances++;
+  this.n = window.AwmInstances;
+
   this.logs = [];
   this.log = function (message, type) {
     if (!type) {
-      type = "log";
+      type = 'log';
     }
     var event = AwmUtil.event.send(type, message, options.target);
     var data = {
@@ -64,10 +73,10 @@ function AwmVideo(streamName, options) {
       message: message,
       data: data
     });
-    if (this.options.skin == "dev") {
+    if (this.options.skin == 'dev') {
       try {
-        var msg = "[" + (type ? type : "log") + "] " + (AwmVideo.destroyed ? "[DESTROYED] " : "") + (this.player && this.player.api ? AwmUtil.format.time(this.player.api.currentTime, {ms: true}) + " " : "") + message;
-        if (type && (type != "log")) {
+        var msg = '[' + (type ? type : 'log') + '] ' + (AwmVideo.destroyed ? '[DESTROYED] ' : '') + '[#' + (AwmVideo.n) + '] ' + (this.player && this.player.api ? AwmUtil.format.time(this.player.api.currentTime, { ms: true }) + ' ' : '') + message;
+        if (type && (type != 'log')) {
           console.warn(msg);
         } else {
           console.log(msg);
@@ -77,13 +86,17 @@ function AwmVideo(streamName, options) {
     }
     return event;
   };
-  this.log("Initializing..");
+  this.log('Initializing..');
+  this.bootMs = new Date().getTime();
 
   this.timers = {
-    list: {}, // Will contain the timeouts (format timeOutIndex: endTime)
+    list: {}, // Will contain the timeouts format timeOutIndex: endTime
     start: function (callback, delay) {
       var i = setTimeout(function () {
         delete AwmVideo.timers.list[i];
+        if (AwmVideo.destroyed) {
+          return;
+        }
         callback();
       }, delay);
       this.list[i] = new Date(new Date().getTime() + delay);
@@ -91,7 +104,7 @@ function AwmVideo(streamName, options) {
     },
     stop: function (which) {
       var list;
-      if (which == "all") {
+      if (which == 'all') {
         list = this.list;
       } else {
         list = {};
@@ -104,7 +117,7 @@ function AwmVideo(streamName, options) {
         delete this.list[i];
       }
     }
-  }
+  };
   this.errorListeners = [];
   this.resumeTime = false;
 
@@ -113,6 +126,11 @@ function AwmVideo(streamName, options) {
       url += this.options.urlappend;
     }
     return url;
+  };
+
+  if (options.reloadDelay && (options.reloadDelay > 3600)) {
+    options.reloadDelay /= 1000;
+    this.log('A reloadDelay of more than an hour was set: assuming milliseconds were intended. ReloadDelay is now ' + options.reloadDelay + 's');
   }
 
   new AwmSkin(this);
@@ -121,27 +139,20 @@ function AwmVideo(streamName, options) {
     if (!options) {
       options = {};
     }
-    options = AwmUtil.object.extend(AwmUtil.object.extend({}, this.options), options)
+    options = AwmUtil.object.extend(AwmUtil.object.extend({}, this.options), options);
 
     var source = false;
-
-    if (options.startCombo) {
-      options.startCombo.started = {
-        player: false,
-        source: false
-      };
-    }
 
     // Retrieve the sources we can loop over
     var sources;
     if (options.forceSource) {
       sources = [AwmVideo.info.source[options.forceSource]];
-      AwmVideo.log("Forcing source " + options.forceSource + ": " + sources[0].type + " @ " + sources[0].url);
+      AwmVideo.log('Forcing source ' + options.forceSource + ': ' + sources[0].type + ' @ ' + sources[0].url);
     } else if (options.forceType) {
       sources = AwmVideo.info.source.filter(function (d) {
         return (d.type === options.forceType);
       });
-      AwmVideo.log("Forcing type " + options.forceType);
+      AwmVideo.log('Forcing type ' + options.forceType);
     } else {
       sources = AwmVideo.info.source;
     }
@@ -154,7 +165,7 @@ function AwmVideo(streamName, options) {
     }
     if (options.forcePlayer) {
       players = [awmplayers[options.forcePlayer]];
-      AwmVideo.log("Forcing player " + options.forcePlayer);
+      AwmVideo.log('Forcing player ' + options.forcePlayer);
     } else {
       players = AwmUtil.object.values(awmplayers);
     }
@@ -164,46 +175,46 @@ function AwmVideo(streamName, options) {
     sources = [].concat(sources);
 
     var sortoptions = {
-      first: "source",
+      first: 'source',
       source: [function (a) {
-        if ("origIndex" in a) {
+        if ('origIndex' in a) {
           return a.origIndex;
         }
 
         //use original sorting -> retrieve index in original array
-        a.origIndex = AwmVideo.info.source.indexOf(a)
+        a.origIndex = AwmVideo.info.source.indexOf(a);
         return a.origIndex;
       }],
-      player: [{priority: 1}]
+      player: [{ priority: 1 }]
     };
     var map = {
-      inner: "player",
-      outer: "source"
+      inner: 'player',
+      outer: 'source'
     };
     if (options.forcePriority) {
-      if ("source" in options.forcePriority) {
+      if ('source' in options.forcePriority) {
         if (!(options.forcePriority.source instanceof Array)) {
-          throw "forcePriority.source is not an array.";
+          throw 'forcePriority.source is not an array.';
         }
         sortoptions.source = options.forcePriority.source.concat(sortoptions.source); //prepend
         AwmUtil.array.multiSort(sources, sortoptions.source);
       }
-      if ("player" in options.forcePriority) {
+      if ('player' in options.forcePriority) {
         if (!(options.forcePriority.player instanceof Array)) {
-          throw "forcePriority.player is not an array.";
+          throw 'forcePriority.player is not an array.';
         }
         sortoptions.player = options.forcePriority.player.concat(sortoptions.player); //prepend
         AwmUtil.array.multiSort(players, sortoptions.player);
       }
-      if ("first" in options.forcePriority) {
+      if ('first' in options.forcePriority) {
         sortoptions.first = options.forcePriority.first; //overwrite
       }
 
 
       //define inner and outer loops
-      if (sortoptions.first == "player") {
-        map.outer = "player";
-        map.inner = "source";
+      if (sortoptions.first == 'player') {
+        map.outer = 'player';
+        map.inner = 'source';
       }
     }
 
@@ -217,6 +228,19 @@ function AwmVideo(streamName, options) {
         current: false
       }
     };
+
+    if (options.startCombo) {
+      options.startCombo.started = {
+        player: false,
+        source: false
+      };
+      for (var i = 0; i < players.length; i++) {
+        if (players[i].shortname == options.startCombo.player) {
+          options.startCombo.player = i;
+          break;
+        }
+      }
+    }
 
     function checkStartCombo(which) {
       if ((options.startCombo) && (!options.startCombo.started[which])) {
@@ -263,16 +287,16 @@ function AwmVideo(streamName, options) {
           }
         }
         if (!quiet) {
-          AwmVideo.log("Checking " + player.name + " with " + source.type + ".. Nope.");
+          AwmVideo.log('Checking ' + player.name + ' with ' + source.type + '.. Nope.');
         }
       }
     }
 
     return false;
-  }
+  };
 
   this.choosePlayer = function () {
-    AwmVideo.log("Checking available players..");
+    AwmVideo.log('Checking available players..');
 
     var result = this.checkCombo();
     if (!result) {
@@ -282,24 +306,24 @@ function AwmVideo(streamName, options) {
     var player = awmplayers[result.player];
     var source = result.source;
 
-    AwmVideo.log("Found a working combo: " + player.name + " with " + source.type + " @ " + source.url);
+    AwmVideo.log('Found a working combo: ' + player.name + ' with ' + source.type + ' @ ' + source.url);
     AwmVideo.playerName = result.player;
     source = AwmUtil.object.extend({}, source);
     source.index = result.source_index;
     source.url = AwmVideo.urlappend(source.url);
     AwmVideo.source = source;
 
-    AwmUtil.event.send("comboChosen", "Player/source combination selected", AwmVideo.options.target);
+    AwmUtil.event.send('comboChosen', 'Player/source combination selected', AwmVideo.options.target);
 
     return true;
-  }
+  };
 
   function hasVideo(d) {
-    if (("meta" in d) && ("tracks" in d.meta)) {
+    if (('meta' in d) && ('tracks' in d.meta)) {
       //check if this stream has video
       var tracks = d.meta.tracks;
       for (var i in tracks) {
-        if (tracks[i].type == "video") {
+        if (tracks[i].type == 'video') {
           return true;
         }
       }
@@ -310,38 +334,38 @@ function AwmVideo(streamName, options) {
   function onStreamInfo(d) {
 
     if ((AwmVideo.player) && (AwmVideo.player.api) && (AwmVideo.player.api.unload)) {
-      AwmVideo.log("Received new stream info while a player was already loaded: unloading player");
+      AwmVideo.log('Received new stream info while a player was already loaded: unloading player');
       AwmVideo.player.api.unload();
     }
 
     AwmVideo.info = d;
     AwmVideo.info.updated = new Date();
-    AwmUtil.event.send("haveStreamInfo", d, AwmVideo.options.target);
-    AwmVideo.log("Stream info was loaded succesfully.");
+    AwmUtil.event.send('haveStreamInfo', d, AwmVideo.options.target);
+    AwmVideo.log('Stream info was loaded succesfully.');
 
-    if ("error" in d) {
+    if ('error' in d) {
       var e = d.error;
-      if ("on_error" in d) {
+      if ('on_error' in d) {
         AwmVideo.log(e);
         e = d.on_error;
       }
-      AwmVideo.showError(e, {reload: true, hideTitle: true});
+      AwmVideo.showError(e, { reload: true, hideTitle: true });
       return;
     }
 
     //pre-show poster or other loading image
     AwmVideo.calcSize = function (size) {
       if (!size) {
-        size = {width: false, height: false};
+        size = { width: false, height: false };
       }
 
       var fw = size.width || ('width' in options && options.width ? options.width : false); //force this width
       var fh = size.height || ('height' in options && options.height ? options.height : false); //force this height
 
-      if ((!this.info) || !("source" in this.info)) {
+      if ((!this.info) || !('source' in this.info)) {
         fw = 640;
         fh = 480;
-      } else if ((!this.info.hasVideo) || (this.source.type.split("/")[1] == "audio")) {
+      } else if ((!this.info.hasVideo) || (this.source.type.split('/')[1] == 'audio')) {
         if (!fw) {
           fw = 480;
         }
@@ -401,7 +425,7 @@ function AwmVideo(streamName, options) {
     d.hasVideo = hasVideo(d);
 
 
-    if (d.type == "live") {
+    if (d.type == 'live') {
       //calculate duration so far
       var maxms = 0;
       for (var i in AwmVideo.info.meta.tracks) {
@@ -418,14 +442,30 @@ function AwmVideo(streamName, options) {
           if (AwmVideo.player && AwmVideo.player.api) {
             AwmVideo.player.api.currentTime = time;
           }
-          this.removeEventListener("initialized", f);
+          this.removeEventListener('initialized', f);
         };
-        AwmUtil.event.addListener(AwmVideo.options.target, "initialized", f);
+        AwmUtil.event.addListener(AwmVideo.options.target, 'initialized', f);
       }
+    }
+
+    //check AwmServer version if combined track selection is supported
+    if (AwmVideo.options.ABR_bitrate && AwmVideo.options.ABR_resize && (AwmVideo.info && !AwmVideo.info.selver)) {
+      //having both won't work, disable bitrate based ABR
+      AwmVideo.options.ABR_bitrate = false;
     }
 
 
     if (AwmVideo.choosePlayer()) {
+
+      if (AwmVideo.reporting) {
+        AwmVideo.reporting.report({
+          player: AwmVideo.playerName,
+          sourceType: AwmVideo.source.type,
+          sourceUrl: AwmVideo.source.url,
+          pageUrl: location.href
+        });
+      }
+
 
       //build player
       AwmVideo.player = new awmplayers[AwmVideo.playerName].player();
@@ -437,19 +477,23 @@ function AwmVideo(streamName, options) {
 
 
       AwmVideo.player.build(AwmVideo, function (video) {
-        AwmVideo.log("Building new player");
+        AwmVideo.log('Building new player');
 
-        AwmVideo.container.removeAttribute("data-loading");
+        AwmVideo.container.removeAttribute('data-loading');
         AwmVideo.video = video;
 
-        if ("api" in AwmVideo.player) {
+        if (AwmVideo.reporting) {
+          AwmVideo.reporting.init();
+        }
+
+        if ('api' in AwmVideo.player) {
 
           // Add monitoring
           AwmVideo.monitor = getAwmDefaultMonitor(AwmVideo);
 
           var events;
           //overwrite (some?) monitoring functions/values with custom ones if specified
-          if ("monitor" in AwmVideo.options) {
+          if ('monitor' in AwmVideo.options) {
             AwmVideo.monitor.default = AwmUtil.object.extend({}, AwmVideo.monitor);
 
             if (Object.getOwnPropertyNames(AwmVideo.options.monitor).filter(item => typeof AwmVideo.options.monitor[item] === 'function').length === 0) {
@@ -462,15 +506,15 @@ function AwmVideo(streamName, options) {
           }
 
           // Enable
-          events = ["loadstart", "play", "playing"];
+          events = ['loadstart', 'play', 'playing'];
           for (var i in events) {
             AwmUtil.event.addListener(AwmVideo.video, events[i], function () {
-              AwmVideo.monitor.init()
+              AwmVideo.monitor.init();
             });
           }
 
           // Disable
-          events = ["loadeddata", "pause", "abort", "emptied", "ended"];
+          events = ['loadeddata', 'pause', 'abort', 'emptied', 'ended'];
           for (var i in events) {
             AwmUtil.event.addListener(AwmVideo.video, events[i], function () {
               if (AwmVideo.monitor) {
@@ -480,7 +524,7 @@ function AwmVideo(streamName, options) {
           }
 
           // Reset
-          events = ["seeking", "seeked",/*"canplay","playing",*/"ratechange"];
+          events = ['seeking', 'seeked',/*"canplay","playing",*/'ratechange'];
           for (var i in events) {
             AwmUtil.event.addListener(AwmVideo.video, events[i], function () {
               if (AwmVideo.monitor) {
@@ -496,65 +540,65 @@ function AwmVideo(streamName, options) {
         new AwmSkin(AwmVideo);
         AwmVideo.container = new AwmUI(AwmVideo);
         AwmVideo.options.target.appendChild(AwmVideo.container);
-        AwmVideo.container.setAttribute("data-loading", ""); //will be removed automatically when video loads
+        AwmVideo.container.setAttribute('data-loading', ''); //will be removed automatically when video loads
 
         AwmVideo.video.p = AwmVideo.player;
 
         // Add event logging
         events = [
-          "abort", "canplay", "canplaythrough",/*"durationchange"*/ "emptied", "ended", "loadeddata", "loadedmetadata", "loadstart", "pause", "play", "playing", "ratechange", "seeked", "seeking", "stalled", "volumechange", "waiting", "metaUpdate_tracks", "resizing"
+          'abort', 'canplay', 'canplaythrough',/*"durationchange"*/ 'emptied', 'ended', 'loadeddata', 'loadedmetadata', 'loadstart', 'pause', 'play', 'playing', 'ratechange', 'seeked', 'seeking', 'stalled', 'volumechange', 'waiting', 'metaUpdate_tracks', 'resizing'
           //,"timeupdate"
         ];
         for (var i in events) {
           AwmUtil.event.addListener(AwmVideo.video, events[i], function (e) {
-            AwmVideo.log(AwmVideo.player.name + " player event fired: " + e.type);
+            AwmVideo.log(AwmVideo.player.name + ' player event fired: ' + e.type);
           });
         }
-        AwmUtil.event.addListener(AwmVideo.video, "error", function (e) { //Needed. Commented console.log below
+        AwmUtil.event.addListener(AwmVideo.video, 'error', function (e) { //Needed. Commented console.log below
           var msg;
           if (
-              ("player" in AwmVideo) && ("api" in AwmVideo.player)
-              && ("error" in AwmVideo.player.api) && (AwmVideo.player.api.error)
+            ('player' in AwmVideo) && ('api' in AwmVideo.player)
+            && ('error' in AwmVideo.player.api) && (AwmVideo.player.api.error)
           ) {
-            if ("message" in AwmVideo.player.api.error) {
+            if ('message' in AwmVideo.player.api.error) {
               msg = AwmVideo.player.api.error.message;
-            } else if (("code" in AwmVideo.player.api.error) && (AwmVideo.player.api.error instanceof MediaError)) {
+            } else if (('code' in AwmVideo.player.api.error) && (AwmVideo.player.api.error instanceof MediaError)) {
               var human = {
-                1: "MEDIA_ERR_ABORTED: The fetching of the associated resource was aborted by the user's request.",
-                2: "MEDIA_ERR_NETWORK: Some kind of network error occurred which prevented the media from being successfully fetched, despite having previously been available.",
-                3: "MEDIA_ERR_DECODE: Despite having previously been determined to be usable, an error occurred while trying to decode the media resource, resulting in an error.",
-                4: "MEDIA_ERR_SRC_NOT_SUPPORTED: The associated resource or media provider object (such as a MediaStream) has been found to be unsuitable."
+                1: 'MEDIA_ERR_ABORTED: The fetching of the associated resource was aborted by the user\'s request.',
+                2: 'MEDIA_ERR_NETWORK: Some kind of network error occurred which prevented the media from being successfully fetched, despite having previously been available.',
+                3: 'MEDIA_ERR_DECODE: Despite having previously been determined to be usable, an error occurred while trying to decode the media resource, resulting in an error.',
+                4: 'MEDIA_ERR_SRC_NOT_SUPPORTED: The associated resource or media provider object (such as a MediaStream) has been found to be unsuitable.'
               };
               if (AwmVideo.player.api.error.code in human) {
                 msg = human[AwmVideo.player.api.error.code];
               } else {
-                msg = "MediaError code " + AwmVideo.player.api.error.code;
+                msg = 'MediaError code ' + AwmVideo.player.api.error.code;
               }
             } else {
               msg = AwmVideo.player.api.error;
-              if (typeof msg != "string") {
+              if (typeof msg != 'string') {
                 msg = JSON.stringify(msg);
               }
             }
           } else {
-            msg = "An error was encountered.";
+            msg = 'An error was encountered.';
             //console.log("Err:",e);
           }
-          if (AwmVideo.state == "Stream is online") {
+          if (AwmVideo.state == 'Stream is online') {
             AwmVideo.showError(msg);
           } else {
             //it was probaby an error like "PIPELINE_ERROR_READ: FFmpegDemuxer: data source error" because the live stream has ended. Print it in the log, but display the stream state instead.
-            AwmVideo.log(msg, "error");
-            AwmVideo.showError(AwmVideo.state, {polling: true});
+            AwmVideo.log(msg, 'error');
+            AwmVideo.showError(AwmVideo.state, { polling: true });
           }
 
         });
 
         //add general resize function
-        if ("setSize" in AwmVideo.player) {
+        if ('setSize' in AwmVideo.player) {
           AwmVideo.player.videocontainer = AwmVideo.video.parentNode;
           AwmVideo.video.currentTarget = AwmVideo.options.target;
-          if (!AwmUtil.class.has(AwmVideo.options.target, "awmvideo-secondaryVideo")) {
+          if (!AwmUtil.class.has(AwmVideo.options.target, 'awmvideo-secondaryVideo')) {
             //this is the main AwmVideo
             AwmVideo.player.resizeAll = function () {
               function findVideo(startAt, matchTarget) {
@@ -575,18 +619,18 @@ function AwmVideo(streamName, options) {
               //find the video that is in the main container, and resize that one
               var main = findVideo(AwmVideo, AwmVideo.options.target);
               if (!main) {
-                throw "Main video not found";
+                throw 'Main video not found';
               }
               main.p.resize();
 
               //then, resize the secondaries
-              if ("secondary" in AwmVideo) {
+              if ('secondary' in AwmVideo) {
                 function tryResize(mv) {
                   if (mv.AwmVideo) {
-                    if ("player" in mv.AwmVideo) {
+                    if ('player' in mv.AwmVideo) {
                       var sec = findVideo(AwmVideo, mv.AwmVideo.options.target);
                       if (!sec) {
-                        throw "Secondary video not found";
+                        throw 'Secondary video not found';
                       }
                       sec.p.resize();
                     }
@@ -605,15 +649,21 @@ function AwmVideo(streamName, options) {
             };
 
           }
-          AwmVideo.player.resize = function (options) {
-            var container = AwmVideo.video.currentTarget.querySelector(".awmvideo");
-            if (!container.hasAttribute("data-fullscreen")) {
+          AwmVideo.player.resize = function (options, oldsize) {
+            var container = AwmVideo.video.currentTarget.querySelector('.awmvideo');
+            if (!oldsize) {
+              oldsize = {
+                width: AwmVideo.video.clientWidth,
+                height: AwmVideo.video.clientHeight
+              };
+            }
+            if (!container.hasAttribute('data-fullscreen')) {
               //if ((!document.fullscreenElement) || (document.fullscreenElement.parentElement != AwmVideo.video.currentTarget)) {
               //first, base the size on the video dimensions
               var size = AwmVideo.calcSize(options);
               this.setSize(size);
-              container.style.width = size.width + "px";
-              container.style.height = size.height + "px";
+              container.style.width = size.width + 'px';
+              container.style.height = size.height + 'px';
 
               if ((AwmVideo.options.fillSpace) && (!options || !options.reiterating)) {
                 //if this container is set to fill the available space
@@ -622,7 +672,7 @@ function AwmVideo(streamName, options) {
                   width: window.innerWidth,
                   height: false,
                   reiterating: true
-                });
+                }, oldsize);
               }
 
               //check if the container is smaller than the video, if so, set the max size to the current container dimensions and reiterate
@@ -632,7 +682,7 @@ function AwmVideo(streamName, options) {
                   width: false,
                   height: AwmVideo.video.currentTarget.clientHeight,
                   reiterating: true
-                });
+                }, oldsize);
               }
               if ((AwmVideo.video.currentTarget.clientWidth) && (AwmVideo.video.currentTarget.clientWidth < size.width)) {
                 //console.log("current w:",size.width,"target w:",AwmVideo.video.currentTarget.clientWidth);
@@ -640,30 +690,34 @@ function AwmVideo(streamName, options) {
                   width: AwmVideo.video.currentTarget.clientWidth,
                   height: false,
                   reiterating: true
-                });
+                }, oldsize);
               }
-              AwmVideo.log("Player size calculated: " + size.width + " x " + size.height + " px");
-              return true;
             } else {
-
               //this is the video that is in the main container, and resize this one to the screen dimensions
-              this.setSize({
-                height: window.innerHeight,
-                width: window.innerWidth
-              });
+              size = {
+                width: window.innerWidth,
+                height: window.innerHeight
+              };
+
+              this.setSize(size);
               return true;
             }
+            if ((size.width != oldsize.width) || (size.height != oldsize.height)) {
+              AwmVideo.log('Player size calculated: ' + size.width + ' x ' + size.height + ' px');
+              AwmUtil.event.send('player_resize', size, AwmVideo.video);
+            }
+            return true;
           };
 
           //if this is the main video
-          if (!AwmUtil.class.has(AwmVideo.options.target, "awmvideo-secondaryVideo")) {
-            AwmUtil.event.addListener(window, "resize", function () {
+          if (!AwmUtil.class.has(AwmVideo.options.target, 'awmvideo-secondaryVideo')) {
+            AwmUtil.event.addListener(window, 'resize', function () {
               if (AwmVideo.destroyed) {
                 return;
               }
               AwmVideo.player.resizeAll();
             }, AwmVideo.video);
-            AwmUtil.event.addListener(AwmVideo.options.target, "resize", function () {
+            AwmUtil.event.addListener(AwmVideo.options.target, 'resize', function () {
               AwmVideo.player.resizeAll();
             }, AwmVideo.video);
             AwmVideo.player.resizeAll();
@@ -672,7 +726,7 @@ function AwmVideo(streamName, options) {
 
         if (AwmVideo.player.api) {
           //add general setSource function
-          if ("setSource" in AwmVideo.player.api) {
+          if ('setSource' in AwmVideo.player.api) {
             AwmVideo.sourceParams = {};
             AwmVideo.player.api.setSourceParams = function (url, params) {
               //append these params to the current source, overwrite if they already exist
@@ -682,16 +736,16 @@ function AwmVideo(streamName, options) {
             };
 
             //add track selection function
-            if (!("setTracks" in AwmVideo.player.api)) {
+            if (!('setTracks' in AwmVideo.player.api)) {
               AwmVideo.player.api.setTracks = function (usetracks) {
 
                 //check tracks exist
                 var meta = AwmUtil.tracks.parse(AwmVideo.info.meta.tracks);
                 for (var i in usetracks) {
-                  if ((i in meta) && ((usetracks[i] in meta[i]) || (usetracks[i] == "none"))) {
+                  if ((i in meta) && ((usetracks[i] in meta[i]) || (usetracks[i] == 'none'))) {
                     continue;
                   }
-                  AwmVideo.log("Skipping trackselection of " + i + " track " + usetracks[i] + " because it does not exist");
+                  AwmVideo.log('Skipping trackselection of ' + i + ' track ' + usetracks[i] + ' because it does not exist');
                   delete usetracks[i];
                 }
                 //if (!AwmUtil.object.keys(usetracks).length) { return; } //don't do this; allow switching back to auto
@@ -703,28 +757,28 @@ function AwmVideo(streamName, options) {
                 //actually switch to the new source url
                 this.setSourceParams(newurl, usetracks);
 
-                AwmUtil.event.send("playerUpdate_trackChanged", {
+                AwmUtil.event.send('playerUpdate_trackChanged', {
                   type: Object.keys(usetracks)[0],
                   trackid: usetracks[Object.keys(usetracks)[0]]
                 }, AwmVideo.video);
 
                 //restore video position
-                if (AwmVideo.info.type != "live") {
+                if (AwmVideo.info.type != 'live') {
                   var f = function () {
-                    this.currentTime = time;
-                    this.removeEventListener("loadedmetadata", f);
+                    AwmVideo.player.api.currentTime = time;
+                    this.removeEventListener('loadedmetadata', f);
                   };
-                  AwmUtil.event.addListener(AwmVideo.video, "loadedmetadata", f);
+                  AwmUtil.event.addListener(AwmVideo.video, 'loadedmetadata', f);
                 }
 
-              }
+              };
 
             }
 
 
           }
           //add general setTracks function if setTrack exists
-          if (!("setTracks" in AwmVideo.player.api) && ("setTrack" in AwmVideo.player.api)) {
+          if (!('setTracks' in AwmVideo.player.api) && ('setTrack' in AwmVideo.player.api)) {
             AwmVideo.player.api.setTracks = function (usetracks) {
               for (var i in usetracks) {
                 AwmVideo.player.api.setTrack(i, usetracks[i]);
@@ -734,7 +788,7 @@ function AwmVideo(streamName, options) {
 
           if (options.setTracks) {
             var setTracks = AwmUtil.object.extend({}, options.setTracks);
-            if (("subtitle" in options.setTracks) && ("setSubtitle" in AwmVideo.player.api)) {
+            if (('subtitle' in options.setTracks) && ('setSubtitle' in AwmVideo.player.api)) {
               AwmVideo.player.onready(function () {
 
                 //find the source for subtitles
@@ -742,8 +796,8 @@ function AwmVideo(streamName, options) {
                 for (var i in AwmVideo.info.source) {
                   var source = AwmVideo.info.source[i];
                   //this is a subtitle source, and it's the same protocol (HTTP/HTTPS) as the video source
-                  if ((source.type == "html5/text/vtt") && (AwmUtil.http.url.split(source.url).protocol == AwmUtil.http.url.split(AwmVideo.source.url).protocol)) {
-                    subtitleSource = source.url.replace(/.srt$/, ".vtt");
+                  if ((source.type == 'html5/text/vtt') && (AwmUtil.http.url.split(source.url).protocol == AwmUtil.http.url.split(AwmVideo.source.url).protocol)) {
+                    subtitleSource = source.url.replace(/.srt$/, '.vtt');
                     break;
                   }
                 }
@@ -753,20 +807,20 @@ function AwmVideo(streamName, options) {
 
                 //find the track meta information
                 var tracks = AwmUtil.tracks.parse(AwmVideo.info.meta.tracks);
-                if (!("subtitle" in tracks) || !(setTracks.subtitle in tracks.subtitle)) {
+                if (!('subtitle' in tracks) || !(setTracks.subtitle in tracks.subtitle)) {
                   return;
                 }
                 var meta = tracks.subtitle[setTracks.subtitle];
 
                 //add source to the meta
-                meta.src = AwmUtil.http.url.addParam(subtitleSource, {track: setTracks.subtitle});
+                meta.src = AwmUtil.http.url.addParam(subtitleSource, { track: setTracks.subtitle });
 
-                meta.label = "automatic";
-                meta.lang = "unknown";
+                meta.label = 'automatic';
+                meta.lang = 'unknown';
 
                 AwmVideo.player.api.setSubtitle(meta);
-                AwmUtil.event.send("playerUpdate_trackChanged", {
-                  type: "subtitle",
+                AwmUtil.event.send('playerUpdate_trackChanged', {
+                  type: 'subtitle',
                   trackid: setTracks.subtitle
                 }, AwmVideo.video);
 
@@ -774,22 +828,22 @@ function AwmVideo(streamName, options) {
               });
             }
 
-            if ("setTrack" in AwmVideo.player.api) {
+            if ('setTrack' in AwmVideo.player.api) {
               AwmVideo.player.onready(function () {
                 for (var i in setTracks) {
                   AwmVideo.player.api.setTrack(i, setTracks[i]);
-                  AwmUtil.event.send("playerUpdate_trackChanged", {
+                  AwmUtil.event.send('playerUpdate_trackChanged', {
                     type: i,
                     trackid: setTracks[i]
                   }, AwmVideo.video);
                 }
               });
-            } else if ("setTracks" in AwmVideo.player.api) {
+            } else if ('setTracks' in AwmVideo.player.api) {
               AwmVideo.player.onready(function () {
                 AwmVideo.player.api.setTracks(setTracks);
               });
               for (var i in setTracks) {
-                AwmUtil.event.send("playerUpdate_trackChanged", {
+                AwmUtil.event.send('playerUpdate_trackChanged', {
                   type: i,
                   trackid: setTracks[i]
                 }, AwmVideo.video);
@@ -798,16 +852,47 @@ function AwmVideo(streamName, options) {
               }
             }
           }
+          if (AwmVideo.player.api.ABR_resize && AwmVideo.options.ABR_resize) {
+            var resizeratelimiter = false;
+            AwmUtil.event.addListener(AwmVideo.video, 'player_resize', function (e) {
+              if (AwmVideo.options.setTracks && AwmVideo.options.setTracks.video) {
+                //trackselection is not set to 'automatic'
+                return;
+              }
 
+              //Whenever the player resizes, start a timer. When the timer ends, request the correct video track. When the player resizes before the timer ends, stop it: track request is sent 1s after the player has the new size
+
+              if (resizeratelimiter) {
+                AwmVideo.timers.stop(resizeratelimiter);
+              }
+              resizeratelimiter = AwmVideo.timers.start(function () {
+                AwmVideo.player.api.ABR_resize(e.message);
+                resizeratelimiter = false;
+              }, 1e3);
+
+            });
+
+            AwmUtil.event.addListener(AwmVideo.video, 'trackSetToAuto', function (e) {
+              //the user selected automatic track selection, update the track resolution
+              if (e.message == 'video') {
+                AwmVideo.player.api.ABR_resize({
+                  width: AwmVideo.video.clientWidth,
+                  height: AwmVideo.video.clientHeight
+                });
+              }
+            });
+            //initialize
+            AwmVideo.player.api.ABR_resize({
+              width: AwmVideo.video.clientWidth,
+              height: AwmVideo.video.clientHeight
+            });
+
+          }
         }
 
         for (var i in AwmVideo.player.onreadylist) {
           AwmVideo.player.onreadylist[i]();
         }
-
-        AwmUtil.event.send("initialized", null, options.target);
-        AwmVideo.log("Initialized");
-
 
         try {
           if (AwmVideo.metrics || AwmVideo.options.metrics) {
@@ -818,9 +903,11 @@ function AwmVideo(streamName, options) {
           }
 
         } catch (e) {
-          AwmVideo.log("Couldn't start statistic module" + e.message);
+          AwmVideo.log('Couldn\'t start statistic module' + e.message);
         }
 
+        AwmUtil.event.send('initialized', null, options.target);
+        AwmVideo.log('Initialized');
         if (AwmVideo.options.callback) {
           options.callback(AwmVideo);
         }
@@ -829,12 +916,12 @@ function AwmVideo(streamName, options) {
     } else if (AwmVideo.options.startCombo) {
       //try again without a startCombo
       delete AwmVideo.options.startCombo;
-      AwmVideo.unload();
-      AwmVideo = awmPlay(AwmVideo.stream, AwmVideo.options);
+      AwmVideo.unload('No compatible players found - retrying without startCombo.');
+      awmPlay(AwmVideo.stream, AwmVideo.options);
     } else {
-      AwmVideo.showError("No compatible player/source combo found.", {reload: true});
-      AwmUtil.event.send("initializeFailed", null, options.target);
-      AwmVideo.log("Initialization failed");
+      AwmVideo.showError('No compatible player/source combo found.', { reload: true });
+      AwmUtil.event.send('initializeFailed', null, options.target);
+      AwmVideo.log('Initialization failed');
     }
   }
 
@@ -850,42 +937,236 @@ function AwmVideo(streamName, options) {
   new AwmSkin(AwmVideo);
   AwmVideo.container = new AwmUI(AwmVideo, AwmVideo.skin.structure.placeholder);
   AwmVideo.options.target.appendChild(AwmVideo.container);
-  AwmVideo.container.setAttribute("data-loading", "");
+  AwmVideo.container.setAttribute('data-loading', '');
 
   //listen for changes to the srteam status
   //switch to polling-mode if websockets are not supported
 
   function openWithGet() {
-    var url = AwmVideo.urlappend(options.host + "/json_" + encodeURIComponent(AwmVideo.stream) + ".js");
-    AwmVideo.log("Requesting stream info from " + url);
+    var url = AwmVideo.urlappend(options.host + '/json_' + encodeURIComponent(AwmVideo.stream) + '.js');
+    AwmVideo.log('Requesting stream info from ' + url);
     AwmUtil.http.get(url, function (d) {
       if (AwmVideo.destroyed) {
         return;
       }
       onStreamInfo(JSON.parse(d));
     }, function () {
-      var msg = "Connection failed: the media server may be offline";
-      AwmVideo.showError(msg, {reload: 30});
+      var msg = 'Connection failed: the media server may be offline';
+      AwmVideo.showError(msg, { reload: 30 });
       if (!AwmVideo.info) {
-        AwmUtil.event.send("initializeFailed", null, options.target);
-        AwmVideo.log("Initialization failed");
+        AwmUtil.event.send('initializeFailed', null, options.target);
+        AwmVideo.log('Initialization failed');
       }
     });
   }
 
-  if ("WebSocket" in window) {
+  if ('WebSocket' in window) {
     function openSocket() {
-      AwmVideo.log("Opening stream status stream..");
-      var url = AwmVideo.options.host.replace(/^http/i, "ws");
-      var socket = new WebSocket(AwmVideo.urlappend(url + "/json_" + encodeURIComponent(AwmVideo.stream) + ".js"));
+      AwmVideo.log('Opening stream status stream..');
+      var url = AwmVideo.options.host.replace(/^http/i, 'ws');
+      var socket = new WebSocket(AwmVideo.urlappend(url + '/json_' + encodeURIComponent(AwmVideo.stream) + '.js'));
       AwmVideo.socket = socket;
       socket.die = false;
       socket.destroy = function () {
         this.die = true;
+        if (AwmVideo.reporting) {
+          AwmVideo.reporting.reportStats();
+          AwmVideo.reporting = false;
+        }
+        this.onclose = function () {
+        };
         this.close();
       };
+      //add a timeout: if the websocket does not connect, switch to http polling
+      socket.timeOut = AwmVideo.timers.start(function () {
+        if (socket.readyState <= 1) {
+          //either it hasn't opened yet, or it is open but we've not received a message so this timer hasn't been removed yet
+          socket.destroy();
+          openWithGet();
+        }
+      }, 5e3);
       socket.onopen = function () {
         this.wasConnected = true;
+
+        //report player status to CeeblueCloud
+        if (!AwmVideo.reporting) {
+          AwmVideo.reporting = {
+            stats: {
+              set: function (key, value) {
+                this.d[key] = value;
+              },
+              add: function (key, add) {
+                if (typeof add == 'undefined') {
+                  add = 1;
+                }
+                this.d[key] += add;
+              },
+              d: {
+                nWaiting: 0,
+                timeWaiting: 0,
+                nStalled: 0,
+                timeStalled: 0,
+                timeUnpaused: 0,
+                nError: 0,
+                nLog: 0,
+                videoHeight: null,
+                videoWidth: null,
+                playerHeight: null,
+                playerWidth: null
+              },
+              last: {
+                firstPlayback: null,
+                nWaiting: 0,
+                timeWaiting: 0,
+                nStalled: 0,
+                timeStalled: 0,
+                timeUnpaused: 0,
+                nError: 0,
+                lastError: null,
+                playbackScore: 1,
+                nLog: 0,
+                autoplay: null,
+                videoHeight: null,
+                videoWidth: null,
+                playerHeight: null,
+                playerWidth: null
+              }
+            },
+            report: function (d) {
+              if (AwmVideo.socket.readyState == 1) {
+                AwmVideo.socket.send(JSON.stringify(d));
+              }
+            },
+            reportStats: function () {
+              var d = {};
+              var report = false;
+              var newlogs = AwmVideo.logs.slice(this.stats.last.nLog);
+              for (var i in this.stats.d) {
+                if (this.stats.d[i] != this.stats.last[i]) {
+                  d[i] = this.stats.d[i];
+                  this.stats.last[i] = d[i];
+                  report = true;
+                }
+              }
+              if (report) {
+                if (newlogs.length) {
+                  d.logs = [];
+                  for (var i in newlogs) {
+                    d.logs.push(newlogs[i].message);
+                  }
+                }
+                this.report(d);
+              }
+              AwmVideo.timers.start(function () {
+                if (AwmVideo.reporting) {
+                  AwmVideo.reporting.reportStats();
+                }
+              }, 5e3);
+            },
+            init: function () {
+              var video = AwmVideo.video;
+
+              var firstPlay = AwmUtil.event.addListener(video, 'playing', function () {
+                AwmVideo.reporting.stats.set('firstPlayback', new Date().getTime() - AwmVideo.bootMs);
+                AwmUtil.event.removeListener(firstPlay);
+              });
+
+              //set listeners for player reporting
+              AwmUtil.event.addListener(video, 'waiting', function () {
+                AwmVideo.reporting.stats.add('nWaiting');
+              });
+              AwmUtil.event.addListener(video, 'stalled', function () {
+                AwmVideo.reporting.stats.add('nStalled');
+              });
+              AwmUtil.event.addListener(AwmVideo.options.target, 'error', function (e) {
+                AwmVideo.reporting.stats.add('nError');
+                AwmVideo.reporting.stats.set('lastError', e.message);
+              }, video); //remove event listener when the player is removed
+
+              if (Object && Object.defineProperty) {
+                var timeWaiting = 0;
+                var waitingSince = false;
+                var timeStalled = 0;
+                var stalledSince = false;
+                var timeUnpaused = 0;
+                var unpausedSince = false;
+                var d = AwmVideo.reporting.stats.d;
+                Object.defineProperty(d, 'timeWaiting', {
+                  get: function () {
+                    return timeWaiting + (waitingSince ? (new Date()).getTime() - waitingSince : 0);
+                  }
+                });
+                Object.defineProperty(d, 'timeStalled', {
+                  get: function () {
+                    return timeStalled + (stalledSince ? (new Date()).getTime() - stalledSince : 0);
+                  }
+                });
+                Object.defineProperty(d, 'timeUnpaused', {
+                  get: function () {
+                    return timeUnpaused + (unpausedSince ? (new Date()).getTime() - unpausedSince : 0);
+                  }
+                });
+                Object.defineProperty(d, 'nLog', {
+                  get: function () {
+                    return AwmVideo.logs.length;
+                  }
+                });
+                Object.defineProperty(d, 'videoHeight', {
+                  get: function () {
+                    return AwmVideo.video ? AwmVideo.video.videoHeight : null;
+                  }
+                });
+                Object.defineProperty(d, 'videoWidth', {
+                  get: function () {
+                    return AwmVideo.video ? AwmVideo.video.videoWidth : null;
+                  }
+                });
+                Object.defineProperty(d, 'playerHeight', {
+                  get: function () {
+                    return AwmVideo.video ? AwmVideo.video.clientHeight : null;
+                  }
+                });
+                Object.defineProperty(d, 'playerWidth', {
+                  get: function () {
+                    return AwmVideo.video ? AwmVideo.video.clientWidth : null;
+                  }
+                });
+
+                AwmUtil.event.addListener(video, 'waiting', function () {
+                  timeWaiting = d.timeWaiting; //in case we get waiting several times in a row
+                  waitingSince = (new Date()).getTime();
+                });
+                AwmUtil.event.addListener(video, 'stalled', function () {
+                  timeStalled = d.timeStalled; //in case we get stalled several times in a row
+                  stalledSince = (new Date()).getTime();
+                });
+                var events = ['playing', 'pause'];
+                for (var i in events) {
+                  AwmUtil.event.addListener(video, events[i], function () {
+                    timeWaiting = d.timeWaiting;
+                    timeStalled = d.timeStalled;
+                    waitingSince = false;
+                    stalledSince = false;
+                  });
+                }
+                AwmUtil.event.addListener(video, 'playing', function () {
+                  timeUnpaused = d.timeUnpaused; //in case we get playing several times in a row
+                  unpausedSince = (new Date()).getTime();
+                });
+                AwmUtil.event.addListener(video, 'pause', function () {
+                  timeUnpaused = d.timeUnpaused;
+                  unpausedSince = false;
+                });
+
+
+              }
+
+              //periodically send the gathered stats
+              this.reportStats();
+
+            }
+          };
+        }
       };
       socket.onclose = function () {
         if (this.die) {
@@ -893,7 +1174,7 @@ function AwmVideo(streamName, options) {
           return;
         }
         if (this.wasConnected) {
-          AwmVideo.log("Reopening websocket..");
+          AwmVideo.log('Reopening websocket..');
           openSocket();
           return;
         }
@@ -903,61 +1184,66 @@ function AwmVideo(streamName, options) {
       };
       var on_ended_show_state = false;
       var on_waiting_show_state = false;
-      socket.addEventListener("message", function (e) {
+      socket.addEventListener('message', function (e) {
+        if (socket.timeOut) {
+          AwmVideo.timers.stop(socket.timeOut);
+          socket.timeOut = false;
+        }
+
         var data = JSON.parse(e.data);
         if (!data) {
-          AwmVideo.showError("Error while parsing stream status stream. Obtained: " + e.data.toString(), {reload: true});
+          AwmVideo.showError('Error while parsing stream status stream. Obtained: ' + e.data.toString(), { reload: true });
         }
 
 
-        if ("error" in data) {
+        if ('error' in data) {
           e = data.error;
-          if ("on_error" in data) {
+          if ('on_error' in data) {
             AwmVideo.log(e);
             e = data.on_error;
           }
           AwmVideo.state = data.error;
           var buttons;
           switch (data.error) {
-            case "Stream is offline":
+            case 'Stream is offline':
               AwmVideo.info = false;
               if (AwmVideo.player && AwmVideo.player.api && AwmVideo.player.api.currentTime) {
                 AwmVideo.resumeTime = AwmVideo.player.api.currentTime;
               }
-            case "Stream is initializing":
-            case "Stream is booting":
-            case "Stream is waiting for data":
-            case "Stream is shutting down":
-            case "Stream status is invalid?!":
+            case 'Stream is initializing':
+            case 'Stream is booting':
+            case 'Stream is waiting for data':
+            case 'Stream is shutting down':
+            case 'Stream status is invalid?!':
               if ((AwmVideo.player) && (AwmVideo.player.api) && (!AwmVideo.player.api.paused)) {
                 //something is (still) playing
-                AwmVideo.log(data.error, "error");
+                AwmVideo.log(data.error, 'error');
 
                 //on ended, show state
                 if (!on_ended_show_state) {
-                  on_ended_show_state = AwmUtil.event.addListener(AwmVideo.video, "ended", function () {
-                    AwmVideo.showError(data.error, {polling: true});
+                  on_ended_show_state = AwmUtil.event.addListener(AwmVideo.video, 'ended', function () {
+                    AwmVideo.showError(data.error, { polling: true });
                   });
                 }
                 if (!on_waiting_show_state) {
-                  on_ended_show_state = AwmUtil.event.addListener(AwmVideo.video, "waiting", function () {
-                    AwmVideo.showError(data.error, {polling: true});
+                  on_ended_show_state = AwmUtil.event.addListener(AwmVideo.video, 'waiting', function () {
+                    AwmVideo.showError(data.error, { polling: true });
                   });
                 }
 
                 return;
               }
-              buttons = {polling: true};
+              buttons = { polling: true };
               break;
             default:
-              buttons = {reload: true};
+              buttons = { reload: true };
           }
 
           AwmVideo.showError(e, buttons);
         } else {
           //new metadata object!
           //console.log("stream status stream said",data);
-          AwmVideo.state = "Stream is online";
+          AwmVideo.state = 'Stream is online';
           AwmVideo.clearError();
           if (on_ended_show_state) {
             AwmUtil.event.removeListener(on_ended_show_state);
@@ -978,12 +1264,12 @@ function AwmVideo(streamName, options) {
             if (a == b) {
               return false;
             }
-            if ((typeof a == "object") && (typeof b != "undefined")) {
+            if ((typeof a == 'object') && (typeof b != 'undefined')) {
               var results = {};
               for (var i in a) {
 
                 //ignore certain keys for which we don't care about changes
-                if (AwmUtil.array.indexOf(["lastms", "hasVideo"], i) >= 0) {
+                if (AwmUtil.array.indexOf(['lastms', 'hasVideo'], i) >= 0) {
                   continue;
                 }
 
@@ -1001,7 +1287,7 @@ function AwmVideo(streamName, options) {
               for (var i in b) {
 
                 //ignore certain keys for which we don't care about changes
-                if (AwmUtil.array.indexOf(["lastms", "hasVideo"], i) >= 0) {
+                if (AwmUtil.array.indexOf(['lastms', 'hasVideo'], i) >= 0) {
                   continue;
                 }
 
@@ -1023,9 +1309,9 @@ function AwmVideo(streamName, options) {
           if (diff) {
             //console.log("Difference",diff,data,AwmVideo.info);
 
-            if ("source" in diff) {
-              if ("error" in AwmVideo.info) {
-                AwmVideo.reload();
+            if ('source' in diff) {
+              if ('error' in AwmVideo.info) {
+                AwmVideo.reload('Reloading, stream info has error');
               }
               return;
             }
@@ -1037,23 +1323,23 @@ function AwmVideo(streamName, options) {
 
             for (var i in diff) {
               switch (i) {
-                case "meta": {
+                case 'meta': {
                   for (var j in diff[i]) {
                     switch (j) {
-                      case "tracks":
+                      case 'tracks':
                         //if difference in tracks, recalculate info.hasVideo
                         AwmVideo.info.hasVideo = hasVideo(AwmVideo.info);
 
                         //signal track selector to refresh
-                        AwmUtil.event.send("metaUpdate_tracks", data, AwmVideo.video);
+                        AwmUtil.event.send('metaUpdate_tracks', data, AwmVideo.video);
 
                         break;
                     }
                   }
                   break;
                 }
-                case "width":
-                case "height": {
+                case 'width':
+                case 'height': {
                   resized = true;
                   break;
                 }
@@ -1066,7 +1352,7 @@ function AwmVideo(streamName, options) {
             }
 
           } else {
-            AwmVideo.log("Metachange: no differences detected");
+            AwmVideo.log('Metachange: no differences detected');
           }
 
         }
@@ -1079,15 +1365,15 @@ function AwmVideo(streamName, options) {
     openWithGet();
   }
 
-  this.unload = function () {
+  this.unload = function (reason) {
     if (this.destroyed) {
       return;
     }
 
-    this.log("Unloading..");
+    this.log('Unloading..');
     this.destroyed = true;
 
-    this.timers.stop("all");
+    this.timers.stop('all');
     for (var i in this.errorListeners) {
       var listener = this.errorListeners[i];
       if (listener.src in AwmUtil.scripts.list) {
@@ -1097,32 +1383,36 @@ function AwmVideo(streamName, options) {
         }
       }
     }
-    if (("monitor" in AwmVideo) && ("destroy" in AwmVideo.monitor)) {
+    if (('monitor' in AwmVideo) && ('destroy' in AwmVideo.monitor)) {
       AwmVideo.monitor.destroy();
     }
     if (this.socket) {
+      if (this.reporting) {
+        this.reporting.reportStats();
+        this.reporting.report({ unload: reason ? reason : null });
+      }
       this.socket.destroy();
     }
     if ((this.player) && (this.player.api)) {
-      if ("pause" in this.player.api) {
+      if ('pause' in this.player.api) {
         this.player.api.pause();
       }
-      if ("setSource" in this.player.api) {
-        this.player.api.setSource("");
+      if ('setSource' in this.player.api) {
+        this.player.api.setSource('');
         //this.element.load(); //don't use this.load() to avoid interrupting play/pause
       }
-      if ("unload" in this.player.api) {
+      if ('unload' in this.player.api) {
         try {
           this.player.api.unload();
         } catch (e) {
-          AwmVideo.log("Error while unloading player: " + e.message);
+          AwmVideo.log('Error while unloading player: ' + e.message);
         }
       }
     }
     if ((this.UI) && (this.UI.elements)) {
       for (var i in this.UI.elements) {
         var e = this.UI.elements[i];
-        if ("attachedListeners" in e) {
+        if ('attachedListeners' in e) {
           //remove attached event listeners
           for (var i in e.attachedListeners) {
             AwmUtil.event.removeListener(e.attachedListeners[i]);
@@ -1136,7 +1426,7 @@ function AwmVideo(streamName, options) {
     if (this.video) {
       AwmUtil.empty(this.video);
     }
-    if ("container" in this) {
+    if ('container' in this) {
       AwmUtil.empty(this.container);
       delete this.container;
     }
@@ -1147,21 +1437,21 @@ function AwmVideo(streamName, options) {
     delete this.video;
 
   };
-  this.reload = function () {
-    var time = ("player" in this && "api" in this.player ? this.player.api.currentTime : false);
+  this.reload = function (reason) {
+    var time = ('player' in this && 'api' in this.player ? this.player.api.currentTime : false);
 
-    this.unload();
+    this.unload(reason);
     AwmVideo = awmPlay(this.stream, this.options);
 
-    if ((time) && (this.info.type != "live")) {
+    if ((time) && (this.info.type != 'live')) {
       //after load, try to restore the video position
       var f = function () {
         if (AwmVideo.player && AwmVideo.player.api) {
           AwmVideo.player.api.currentTime = time;
         }
-        this.removeEventListener("initialized", f);
+        this.removeEventListener('initialized', f);
       };
-      AwmUtil.event.addListener(this.options.target, "initialized", f);
+      AwmUtil.event.addListener(this.options.target, 'initialized', f);
     }
 
     return AwmVideo;
@@ -1169,7 +1459,7 @@ function AwmVideo(streamName, options) {
   this.nextCombo = function () {
 
     var time = false;
-    if (("player" in this) && ("api" in this.player)) {
+    if (('player' in this) && ('api' in this.player)) {
       time = this.player.api.currentTime;
     }
 
@@ -1177,9 +1467,9 @@ function AwmVideo(streamName, options) {
       source: this.source.index,
       player: this.playerName
     };
-    if (!this.checkCombo({startCombo: startCombo}, true)) {
+    if (!this.checkCombo({ startCombo: startCombo }, true)) {
       //the nextCombo won't yield a result
-      if (this.checkCombo({startCombo: false}, true)) {
+      if (this.checkCombo({ startCombo: false }, true)) {
         //..but resetting the startcombo would
         startCombo = false;
       } else {
@@ -1187,20 +1477,20 @@ function AwmVideo(streamName, options) {
       }
     }
 
-    this.unload();
+    this.unload('nextCombo');
     var opts = this.options;
     opts.startCombo = startCombo;
     AwmVideo = awmPlay(this.stream, opts);
 
-    if ((time) && (isFinite(time) && (this.info.type != "live"))) {
+    if ((time) && (isFinite(time) && (this.info.type != 'live'))) {
       //after load, try to restore the video position
       var f = function () {
-        if (("player" in AwmVideo) && ("api" in AwmVideo.player)) {
+        if (('player' in AwmVideo) && ('api' in AwmVideo.player)) {
           AwmVideo.player.api.currentTime = time;
         }
-        this.removeEventListener("initialized", f);
+        this.removeEventListener('initialized', f);
       };
-      AwmUtil.event.addListener(opts.target, "initialized", f);
+      AwmUtil.event.addListener(opts.target, 'initialized', f);
     }
 
   };

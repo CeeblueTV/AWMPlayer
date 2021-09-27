@@ -1,7 +1,7 @@
 function getAwmMetric(AwmVideo, streamId) {
   return {
     AwmVideo: AwmVideo,
-    METRICS_URL: "wss://ceeblue.tv/stats/ws/viewer/awm",
+    METRICS_URL: 'wss://ceeblue.tv/stats/ws/viewer/awm',
     websocket: null,
 
     statistic: {
@@ -10,14 +10,14 @@ function getAwmMetric(AwmVideo, streamId) {
       protocol: null,
     },
 
-    listeners: {scoreListener: null, protocolListener: null},
+    listeners: { scoreListener: null, protocolListener: null },
 
     start() {
       if (!AwmVideo && !this.AwmVideo) {
-        throw "AwmVideo is required";
+        throw 'AwmVideo is required';
       }
       if (!streamId) {
-        throw "stream id is required";
+        throw 'stream id is required';
       }
       if (this.websocket !== null) {
         console.warn('Websocket is already created');
@@ -26,16 +26,16 @@ function getAwmMetric(AwmVideo, streamId) {
 
       this.websocket = new WebSocket(this.METRICS_URL);
 
-      this.addListeners()
+      this.addListeners();
     },
 
     addListeners() {
-      this.listeners.scoreListener = AwmUtil.event.addListener(this.AwmVideo.options.target, this.AwmVideo.monitor.SCORE_UPDATE_EVENT, ({message}) => {
+      this.listeners.scoreListener = AwmUtil.event.addListener(this.AwmVideo.options.target, this.AwmVideo.monitor.SCORE_UPDATE_EVENT, ({ message }) => {
         this.statistic.score = message;
         this.send();
       });
 
-      this.listeners.protocolListener = AwmUtil.event.addListener(this.AwmVideo.options.target, this.AwmVideo.monitor.PROTOCOL_CHANGE_EVENT, ({message}) => {
+      this.listeners.protocolListener = AwmUtil.event.addListener(this.AwmVideo.options.target, this.AwmVideo.monitor.PROTOCOL_CHANGE_EVENT, ({ message }) => {
         this.statistic.protocol = AwmUtil.format.mime2human(message);
         this.send();
       });
@@ -56,5 +56,5 @@ function getAwmMetric(AwmVideo, streamId) {
 
       this.websocket.close();
     },
-  }
+  };
 }

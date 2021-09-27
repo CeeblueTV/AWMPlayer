@@ -8,10 +8,10 @@ var AwmUtil = {
         options = {};
       }
 
-      var ago = (secs < 0 ? " ago" : "");
+      var ago = (secs < 0 ? ' ago' : '');
       secs = Math.abs(secs);
 
-      var days = Math.floor(secs / 86400)
+      var days = Math.floor(secs / 86400);
       secs = secs - days * 86400;
       var hours = Math.floor(secs / 3600);
       secs = secs - hours * 3600;
@@ -20,27 +20,27 @@ var AwmUtil = {
       secs = Math.floor(secs - mins * 60);
       var str = [];
       if (days) {
-        days = days + " day" + (days > 1 ? "s" : "") + ", ";
+        days = days + ' day' + (days > 1 ? 's' : '') + ', ';
       }
       if ((hours) || (days)) {
         str.push(hours);
-        str.push(("0" + mins).slice(-2));
+        str.push(('0' + mins).slice(-2));
       } else {
         str.push(mins); //don't use 0 padding if there are no hours in front
       }
-      str.push(("0" + Math.floor(secs)).slice(-2));
+      str.push(('0' + Math.floor(secs)).slice(-2));
 
       if (options.ms) {
-        str[str.length - 1] += "." + ("000" + ms).slice(-3);
+        str[str.length - 1] += '.' + ('000' + ms).slice(-3);
       }
 
-      return (days ? days : "") + str.join(":") + ago;
+      return (days ? days : '') + str.join(':') + ago;
     },
     ucFirst: function (string) {
       return string.charAt(0).toUpperCase() + string.slice(1);
     },
     number: function (num) {
-      if ((isNaN(Number(num))) || (num == 0)) {
+      if ((isNaN(Number(num))) || (Number(num) === 0)) {
         return num;
       }
 
@@ -52,23 +52,23 @@ var AwmUtil = {
 
       //thousand seperation
       if (num >= 1e4) {
-        var seperator = " ";
-        var number = num.toString().split(".");
+        var seperator = ' ';
+        var number = num.toString().split('.');
         var regex = /(\d+)(\d{3})/;
         while (regex.test(number[0])) {
-          number[0] = number[0].replace(regex, "$1" + seperator + "$2");
+          number[0] = number[0].replace(regex, '$1' + seperator + '$2');
         }
-        num = number.join(".");
+        num = number.join('.');
       }
 
       return num;
     },
-    bytes: function (val) {
+    bytes: function (val, bits) {
       if (isNaN(Number(val))) {
         return val;
       }
 
-      var suffix = ["bytes", "KB", "MB", "GB", "TB", "PB"];
+      var suffix = bits ? ['bits', 'Kb', 'Mb', 'Gb', 'Tb', 'Pb'] : ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
       var unit;
       if (val == 0) {
         unit = suffix[0];
@@ -83,50 +83,53 @@ var AwmUtil = {
       }
       return this.number(val) + unit;
     },
+    bits: function (val) {
+      return this.bytes(val, true);
+    },
     mime2human: function (mime) {
       switch (mime) {
-        case "html5/video/webm": {
-          return "WebM";
+        case 'html5/video/webm': {
+          return 'WebM';
         }
-        case "html5/application/vnd.apple.mpegurl": {
-          return "HLS (TS)";
+        case 'html5/application/vnd.apple.mpegurl': {
+          return 'HLS (TS)';
         }
-        case "html5/application/vnd.apple.mpegurl;version=7": {
-          return "HLS (CMAF)";
+        case 'html5/application/vnd.apple.mpegurl;version=7': {
+          return 'HLS (CMAF)';
         }
-        case "flash/10": {
-          return "Flash (RTMP)";
+        case 'flash/10': {
+          return 'Flash (RTMP)';
         }
-        case "flash/11": {
-          return "Flash (HDS)";
+        case 'flash/11': {
+          return 'Flash (HDS)';
         }
-        case "flash/7": {
-          return "Flash (Progressive)";
+        case 'flash/7': {
+          return 'Flash (Progressive)';
         }
-        case "html5/video/mpeg": {
-          return "TS";
+        case 'html5/video/mpeg': {
+          return 'TS';
         }
-        case "html5/application/vnd.ms-sstr+xml":
-        case "html5/application/vnd.ms-ss": {
-          return "Smooth Streaming";
+        case 'html5/application/vnd.ms-sstr+xml':
+        case 'html5/application/vnd.ms-ss': {
+          return 'Smooth Streaming';
         }
-        case "dash/video/mp4": {
-          return "DASH";
+        case 'dash/video/mp4': {
+          return 'DASH';
         }
-        case "webrtc": {
-          return "WebRTC";
+        case 'webrtc': {
+          return 'WebRTC';
         }
-        case "silverlight": {
-          return "Smooth streaming (Silverlight)";
+        case 'silverlight': {
+          return 'Smooth streaming (Silverlight)';
         }
-        case "html5/text/vtt": {
-          return "VTT subtitles";
+        case 'html5/text/vtt': {
+          return 'VTT subtitles';
         }
-        case "html5/text/plain": {
-          return "SRT subtitles";
+        case 'html5/text/plain': {
+          return 'SRT subtitles';
         }
         default: {
-          return mime.replace("html5/", "").replace("video/", "").replace("audio/", "").toLocaleUpperCase();
+          return mime.replace('html5/', '').replace('video/', '').replace('audio/', '').toLocaleUpperCase();
         }
       }
     }
@@ -135,7 +138,7 @@ var AwmUtil = {
   class: {
     //reroute classList functionalities if not supported; also avoid indexOf
     add: function (DOMelement, item) {
-      if ("classList" in DOMelement) {
+      if ('classList' in DOMelement) {
         DOMelement.classList.add(item);
       } else {
         var classes = this.get(DOMelement);
@@ -145,7 +148,7 @@ var AwmUtil = {
       }
     },
     remove: function (DOMelement, item) {
-      if ("classList" in DOMelement) {
+      if ('classList' in DOMelement) {
         DOMelement.classList.remove(item);
       } else {
         var classes = this.get(DOMelement);
@@ -160,21 +163,21 @@ var AwmUtil = {
     },
     get: function (DOMelement) {
       var classes;
-      var className = DOMelement.getAttribute("class"); //DOMelement.className does not work on svg elements
+      var className = DOMelement.getAttribute('class'); //DOMelement.className does not work on svg elements
 
-      if ((!className) || (className == "")) {
+      if ((!className) || (className == '')) {
         classes = [];
       } else {
-        classes = className.split(" ");
+        classes = className.split(' ');
       }
 
       return classes;
     },
     set: function (DOMelement, classes) {
-      DOMelement.setAttribute("class", classes.join(" "));
+      DOMelement.setAttribute('class', classes.join(' '));
     },
     has: function (DOMelement, hasClass) {
-      return (DOMelement.className.split(" ").indexOf(hasClass) >= 0)
+      return (DOMelement.className.split(' ').indexOf(hasClass) >= 0);
     }
   },
 
@@ -182,7 +185,7 @@ var AwmUtil = {
     //extend object1 with object2
     extend: function (object1, object2, deep) {
       for (var i in object2) {
-        if (deep && (typeof object2[i] == "object") && (!("nodeType" in object2[i]))) {
+        if (deep && (typeof object2[i] == 'object') && (!('nodeType' in object2[i]))) {
           if (!(i in object1)) {
             if (AwmUtil.array.is(object2[i])) {
               object1[i] = [];
@@ -209,7 +212,7 @@ var AwmUtil = {
       }
 
       if (sorting) {
-        if (typeof sorting != "function") {
+        if (typeof sorting != 'function') {
           sorting = function (a, b) {
             return a.localeCompare(b);
           };
@@ -241,9 +244,9 @@ var AwmUtil = {
     //replace [].indexOf
     indexOf: function (array, entry) {
       if (!(array instanceof Array)) {
-        throw "Tried to use indexOf on something that is not an array";
+        throw 'Tried to use indexOf on something that is not an array';
       }
-      if ("indexOf" in array) {
+      if ('indexOf' in array) {
         return array.indexOf(entry);
       }
 
@@ -256,7 +259,7 @@ var AwmUtil = {
     },
     //replace isArray
     is: function (array) {
-      if ("isArray" in Array) {
+      if ('isArray' in Array) {
         return Array.isArray(array);
       }
       return Object.prototype.toString.call(array) === '[object Array]';
@@ -286,10 +289,10 @@ var AwmUtil = {
 
         function parseIt(item, key, sortvalue) {
           if (!(key in item)) {
-            throw "Invalid sorting rule: " + JSON.stringify([key, sortvalue]) + ". \"" + key + "\" is not a key of " + JSON.stringify(item);
+            throw 'Invalid sorting rule: ' + JSON.stringify([key, sortvalue]) + '. "' + key + '" is not a key of ' + JSON.stringify(item);
           }
 
-          if (typeof sortvalue == "number") {
+          if (typeof sortvalue == 'number') {
             //deals with something like {priority: -1}
             if (key in item) {
               return item[key] * sortvalue;
@@ -297,16 +300,16 @@ var AwmUtil = {
           }
 
           //deals with something like {type:["webrtc"]}
-          var i = sortvalue.indexOf(item[key])
+          var i = sortvalue.indexOf(item[key]);
           return (i >= 0 ? i : sortvalue.length);
         }
 
         //deals with something like function(a){ return a.foo + a.bar; }
-        if (typeof key == "function") {
+        if (typeof key == 'function') {
           return key(a);
         }
 
-        if (typeof key == "object") {
+        if (typeof key == 'object') {
           if (key instanceof Array) {
             //it's an array
             return parseIt(a, key[0], key[1]);
@@ -321,7 +324,7 @@ var AwmUtil = {
           return a[key];
         }
 
-        throw "Invalid sorting rule: " + key + ". This should be a function, object or key of " + JSON.stringify(a) + ".";
+        throw 'Invalid sorting rule: ' + key + '. This should be a function, object or key of ' + JSON.stringify(a) + '.';
       }
 
       array.sort(function (a, b) {
@@ -341,8 +344,8 @@ var AwmUtil = {
   },
 
   createUnique: function () {
-    var i = "uid" + Math.random().toString().replace("0.", "");
-    if (document.querySelector("." + i)) {
+    var i = 'uid' + Math.random().toString().replace('0.', '');
+    if (document.querySelector('.' + i)) {
       //if this is already used, try again
       return createUnique();
     }
@@ -353,8 +356,8 @@ var AwmUtil = {
     getpost: function (type, url, data, callback, errorCallback) {
       var xhr = new XMLHttpRequest();
       xhr.open(type, url, true);
-      if (type == "POST") {
-        xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+      if (type == 'POST') {
+        xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
       }
 
       if (errorCallback) {
@@ -372,17 +375,17 @@ var AwmUtil = {
       if (errorCallback) {
         xhr.onerror = function () {
           errorCallback(xhr);
-        }
+        };
         xhr.ontimeout = xhr.onerror;
       }
-      if (type == "POST") {
+      if (type == 'POST') {
         var poststr;
         var post = [];
         for (var i in data) {
-          post.push(i + "=" + encodeURIComponent(data[i]));
+          post.push(i + '=' + encodeURIComponent(data[i]));
         }
         if (post.length) {
-          poststr = post.join("&");
+          poststr = post.join('&');
         }
         xhr.send(poststr);
       } else {
@@ -390,41 +393,41 @@ var AwmUtil = {
       }
     },
     get: function (url, callback, errorCallback) {
-      this.getpost("GET", url, null, callback, errorCallback);
+      this.getpost('GET', url, null, callback, errorCallback);
     },
     post: function (url, data, callback, errorCallback) {
-      this.getpost("POST", url, data, callback, errorCallback);
+      this.getpost('POST', url, data, callback, errorCallback);
     },
     url: {
       addParam: function (url, params) {
-        var spliturl = url.split("?");
+        var spliturl = url.split('?');
         var ret = [spliturl.shift()];
         var splitparams = [];
         if (spliturl.length) {
-          splitparams = spliturl[0].split("&");
+          splitparams = spliturl[0].split('&');
         }
         for (var i in params) {
-          splitparams.push(i + "=" + params[i]);
+          splitparams.push(i + '=' + params[i]);
         }
         if (splitparams.length) {
-          ret.push(splitparams.join("&"));
+          ret.push(splitparams.join('&'));
         }
-        return ret.join("?");
+        return ret.join('?');
       },
       split: function (url) {
-        var a = document.createElement("a");
+        var a = document.createElement('a');
         a.href = url;
         return {
           protocol: a.protocol,
           host: a.hostname,
           hash: a.hash,
           port: a.port,
-          path: a.pathname.replace(/\/*$/, "")
+          path: a.pathname.replace(/\/*$/, '')
         };
       },
       sanitizeHost: function (host) {
         var split = AwmUtil.http.url.split(host);
-        var out = split.protocol + "//" + split.host + (split.port && (split.port != "") ? ":" + split.port : "") + (split.hash && (split.hash != "") ? "#" + split.hash : "") + (split.path ? (split.path.charAt(0) == "/" ? split.path : "/" + split.path) : "");
+        var out = split.protocol + '//' + split.host + (split.port && (split.port != '') ? ':' + split.port : '') + (split.hash && (split.hash != '') ? '#' + split.hash : '') + (split.path ? (split.path.charAt(0) == '/' ? split.path : '/' + split.path) : '');
         //console.log("converted",host,"to",out);
         return out;
       }
@@ -434,9 +437,9 @@ var AwmUtil = {
   css: {
     cache: {},
     load: function (url, colors, callback) {
-      var style = document.createElement("style");
-      style.type = "text/css";
-      style.setAttribute("data-source", url);
+      var style = document.createElement('style');
+      style.type = 'text/css';
+      style.setAttribute('data-source', url);
       if (callback) {
         style.callback = callback;
       }
@@ -446,7 +449,7 @@ var AwmUtil = {
         //parse rules and replace variables; expected syntax $abc[.abc]
         var css = AwmUtil.css.applyColors(d, colors);
 
-        if ("callback" in style) {
+        if ('callback' in style) {
           style.callback(css);
         } else {
           style.textContent = css;
@@ -477,7 +480,7 @@ var AwmUtil = {
               attempts--;
               setTimeout(retry, 2e3);
             } else {
-              var d = "/*Failed to load*/";
+              var d = '/*Failed to load*/';
               for (var i in cache[url]) {
                 cache[url][i](d);
               }
@@ -493,7 +496,7 @@ var AwmUtil = {
     },
     applyColors: function (css, colors) {
       return css.replace(/\$([^\s^;^}]*)/g, function (str, variable) {
-        var index = variable.split(".");
+        var index = variable.split('.');
         var val = colors;
         for (var j in index) {
           val = val[index[j]];
@@ -502,8 +505,8 @@ var AwmUtil = {
       });
     },
     createStyle: function (css, prepend, applyToChildren) {
-      var style = document.createElement("style");
-      style.type = "text/css";
+      var style = document.createElement('style');
+      style.type = 'text/css';
 
       if (css) {
         if (prepend) {
@@ -516,15 +519,15 @@ var AwmUtil = {
     },
     prependClass: function (css, prepend, applyToChildren) {
       var style = false;
-      if (typeof css != "string") {
+      if (typeof css != 'string') {
         style = css;
-        if (!("unprepended" in style)) {
+        if (!('unprepended' in style)) {
           style.unprepended = style.textContent;
         }
         css = style.unprepended;
       }
       //remove all block comments
-      css = css.replace(/\/\*.*?\*\//g, "");
+      css = css.replace(/\/\*.*?\*\//g, '');
 
       //remove all @ {} blocks (media, keyframes, screen etc) and save it to re-insert them after class prepending
       //match anything starting with @ something {,  until the first }
@@ -532,7 +535,7 @@ var AwmUtil = {
 
       for (var i in save) {
         //add a placeholder for unfinished replace
-        css = css.replace(save[i], "@@#@@");
+        css = css.replace(save[i], '@@#@@');
 
         var replacecount = 1;
 
@@ -542,7 +545,7 @@ var AwmUtil = {
           var match = css.match(/@@#@@([^}]*})/); //match anything starting with @@#@@ until the first }
 
           //replace the full match with the unfinished placeholder
-          css = css.replace(match[0], "@@#@@");
+          css = css.replace(match[0], '@@#@@');
 
           //add the group (the code untill the next }) to the save
           save[i] += match[1];
@@ -552,26 +555,26 @@ var AwmUtil = {
         }
 
         //after the edits, @@@@ will be replaced with the contents of save[i]
-        css = css.replace("@@#@@", "@@@@");
+        css = css.replace('@@#@@', '@@@@');
       }
 
       //find and replace selectors
       css = css.replace(/[^@]*?{[^]*?}/g, function (match) {
-        var split = match.split("{")
-        var selectors = split[0].split(",");
-        var properties = "{" + split.slice(1).join("}");
+        var split = match.split('{');
+        var selectors = split[0].split(',');
+        var properties = '{' + split.slice(1).join('}');
 
         for (var i in selectors) {
           selectors[i] = selectors[i].trim();
-          var str = "." + prepend + selectors[i];
+          var str = '.' + prepend + selectors[i];
           if (applyToChildren) {
-            str += ",\n." + prepend + " " + selectors[i];
+            str += ',\n.' + prepend + ' ' + selectors[i];
           }
           selectors[i] = str;
         }
 
 
-        return "\n" + selectors + " " + properties;
+        return '\n' + selectors + ' ' + properties;
       });
 
       //reinsert saved blocks
@@ -594,7 +597,7 @@ var AwmUtil = {
         //also empty this child
         this.empty(DOMelement.lastChild);
       }
-      if ("attachedListeners" in DOMelement.lastChild) {
+      if ('attachedListeners' in DOMelement.lastChild) {
         //remove attached event listeners
         for (var i in DOMelement.lastChild.attachedListeners) {
           AwmUtil.event.removeListener(DOMelement.lastChild.attachedListeners[i]);
@@ -635,7 +638,7 @@ var AwmUtil = {
       if (!storeOnElement) {
         storeOnElement = DOMelement;
       }
-      if (!("attachedListeners" in storeOnElement)) {
+      if (!('attachedListeners' in storeOnElement)) {
         storeOnElement.attachedListeners = [];
       }
       var output = {
@@ -669,31 +672,31 @@ var AwmUtil = {
         //register to error listening
         this.list[src].subscribers.push(onevent.onerror);
         //execute onload
-        if ("onload" in onevent) {
+        if ('onload' in onevent) {
           if (this.list[src].tag.hasLoaded) {
             onevent.onload();
           } else {
-            AwmUtil.event.addListener(this.list[src].tag, "load", onevent.onload);
+            AwmUtil.event.addListener(this.list[src].tag, 'load', onevent.onload);
           }
         }
         return;
       }
 
-      var scripttag = document.createElement("script");
+      var scripttag = document.createElement('script');
       scripttag.hasLoaded = false;
-      scripttag.setAttribute("src", src);
-      scripttag.setAttribute("crossorigin", "anonymous"); //must be set to get info about errors thrown
+      scripttag.setAttribute('src', src);
+      scripttag.setAttribute('crossorigin', 'anonymous'); //must be set to get info about errors thrown
       document.head.appendChild(scripttag);
       scripttag.onerror = function (e) {
         onevent.onerror(e);
-      }
+      };
       scripttag.onload = function (e) {
         this.hasLoaded = true;
         if (!AwmVideo.destroyed) {
           onevent.onload(e);
         }
-      }
-      scripttag.addEventListener("error", function (e) {
+      };
+      scripttag.addEventListener('error', function (e) {
         onevent.onerror(e);
       });
 
@@ -729,58 +732,58 @@ var AwmUtil = {
       var output = {};
       for (var i in metaTracks) {
         var track = AwmUtil.object.extend({}, metaTracks[i]);
-        if (track.type == "meta") {
+        if (track.type == 'meta') {
           track.type = track.codec;
-          track.codec = "meta";
+          track.codec = 'meta';
         }
 
         if (!(track.type in output)) {
           output[track.type] = {};
         }
-        output[track.type][("idx" in track ? track.idx : track.trackid)] = track;
+        output[track.type][('idx' in track ? track.idx : track.trackid)] = track;
 
         //make up something logical for the track displayname
         var name = {};
 
         for (var j in track) {
           switch (j) {
-            case "width":
-              name[j] = track.width + "×" + track.height;
+            case 'width':
+              name[j] = track.width + '×' + track.height;
               break;
-            case "bps":
-              if (track.codec == "meta") {
+            case 'bps':
+              if (track.codec == 'meta') {
                 continue;
               }
               if (track.bps > 0) {
                 var val;
                 if (track.bps > 1024 * 1024 / 8) {
-                  val = Math.round(track.bps / 1024 / 1024 * 8) + "mbps";
+                  val = Math.round(track.bps / 1024 / 1024 * 8) + 'mbps';
                 } else {
-                  val = Math.round(track.bps / 1024 * 8) + "kbps";
+                  val = Math.round(track.bps / 1024 * 8) + 'kbps';
                 }
                 name[j] = val;
               }
               break;
-            case "fpks":
+            case 'fpks':
               if (track.fpks > 0) {
-                name[j] = track.fpks / 1e3 + "fps";
+                name[j] = track.fpks / 1e3 + 'fps';
               }
               break;
-            case "channels":
+            case 'channels':
               if (track.channels > 0) {
-                name[j] = (track.channels == 1 ? "Mono" : (track.channels == 2 ? "Stereo" : "Surround (" + track.channels + "ch)"));
+                name[j] = (track.channels == 1 ? 'Mono' : (track.channels == 2 ? 'Stereo' : 'Surround (' + track.channels + 'ch)'));
               }
               break;
-            case "rate":
-              name[j] = Math.round(track.rate) + "Khz";
+            case 'rate':
+              name[j] = Math.round(track.rate) + 'Khz';
               break;
-            case "language":
-              if (track[j] != "Undetermined") {
+            case 'language':
+              if (track[j] != 'Undetermined') {
                 name[j] = track[j];
               }
               break;
-            case "codec":
-              if (track.codec == "meta") {
+            case 'codec':
+              if (track.codec == 'meta') {
                 continue;
               }
               name[j] = track[j];
@@ -825,7 +828,7 @@ var AwmUtil = {
           output[type][i].different = different;
           output[type][i].same = same;
           var d = AwmUtil.object.values(different);
-          output[type][i].displayName = (d.length ? d.join(", ") : AwmUtil.object.values(output[type][i].describe).join(" "));
+          output[type][i].displayName = (d.length ? d.join(', ') : AwmUtil.object.values(output[type][i].describe).join(' '));
         }
 
         //check if some tracks have the same display name
@@ -835,8 +838,8 @@ var AwmUtil = {
             //we have double names, add the track id
             var n = 1;
             for (var i in output[type]) {
-              output[type][i].different.trackid = n + ")";
-              output[type][i].displayName = "Track " + n + " (" + output[type][i].displayName + ")";
+              output[type][i].different.trackid = n + ')';
+              output[type][i].displayName = 'Track ' + n + ' (' + output[type][i].displayName + ')';
               n++;
             }
             break;
@@ -868,7 +871,7 @@ var AwmUtil = {
     var zoom = 1;
     var node = element;
     while (node) {
-      if ((node.style.zoom) && (node.style.zoom != "")) {
+      if ((node.style.zoom) && (node.style.zoom != '')) {
         zoom *= parseFloat(node.style.zoom, 10);
       }
       node = node.parentElement;
@@ -885,13 +888,13 @@ var AwmUtil = {
   },
 
   createGraph: function (data, options) {
-    var ns = "http://www.w3.org/2000/svg";
+    var ns = 'http://www.w3.org/2000/svg';
 
-    var svg = document.createElementNS(ns, "svg");
-    svg.setAttributeNS(null, "height", "100%");
-    svg.setAttributeNS(null, "width", "100%");
-    svg.setAttributeNS(null, "class", "awm icon graph");
-    svg.setAttributeNS(null, "preserveAspectRatio", "none");
+    var svg = document.createElementNS(ns, 'svg');
+    svg.setAttributeNS(null, 'height', '100%');
+    svg.setAttributeNS(null, 'width', '100%');
+    svg.setAttributeNS(null, 'class', 'awm icon graph');
+    svg.setAttributeNS(null, 'preserveAspectRatio', 'none');
 
     var x_correction = data.x[0];
     var lasty = data.y[0];
@@ -923,7 +926,7 @@ var AwmUtil = {
         area.y.max = Math.max(area.y.max, y * -1);
       } else {
         //reprocess the entire path
-        var d = path[0].split(",");
+        var d = path[0].split(',');
         area = {
           x: {
             min: d[0],
@@ -935,72 +938,72 @@ var AwmUtil = {
           }
         };
         for (var i = 1; i < path.length; i++) {
-          var d = path[i].split(",");
+          var d = path[i].split(',');
           updateMinMax(d[0], d[1] * -1);
         }
       }
     }
 
-    path.push([data.x[0] - x_correction, data.y[0] * -1].join(","));
+    path.push([data.x[0] - x_correction, data.y[0] * -1].join(','));
     for (var i = 1; i < data.y.length; i++) {
       updateMinMax(data.x[i] - x_correction, data.y[i] * -1);
-      path.push("L " + [data.x[i] - x_correction, data.y[i] * -1].join(","));
+      path.push('L ' + [data.x[i] - x_correction, data.y[i] * -1].join(','));
     }
 
     //define gradient
-    var defs = document.createElementNS(ns, "defs");
+    var defs = document.createElementNS(ns, 'defs');
     svg.appendChild(defs);
-    var gradient = document.createElementNS(ns, "linearGradient");
+    var gradient = document.createElementNS(ns, 'linearGradient');
     defs.appendChild(gradient);
-    gradient.setAttributeNS(null, "id", AwmUtil.createUnique());
-    gradient.setAttributeNS(null, "gradientUnits", "userSpaceOnUse");
+    gradient.setAttributeNS(null, 'id', AwmUtil.createUnique());
+    gradient.setAttributeNS(null, 'gradientUnits', 'userSpaceOnUse');
     gradient.innerHTML += '<stop offset="0" stop-color="green"/>';
     gradient.innerHTML += '<stop offset="0.33" stop-color="yellow"/>';
     gradient.innerHTML += '<stop offset="0.66" stop-color="orange"/>';
     gradient.innerHTML += '<stop offset="1" stop-color="red"/>';
 
     function updateViewBox() {
-      if ("x" in options) {
-        if ("min" in options.x) {
+      if ('x' in options) {
+        if ('min' in options.x) {
           area.x.min = options.x.min;
         }
-        if ("max" in options.x) {
+        if ('max' in options.x) {
           area.x.max = options.x.max;
         }
-        if ("count" in options.x) {
+        if ('count' in options.x) {
           area.x.min = area.x.max - options.x.count;
         }
       }
-      if ("y" in options) {
-        if ("min" in options.y) {
+      if ('y' in options) {
+        if ('min' in options.y) {
           area.y.min = options.y.max * -1;
         }
-        if ("max" in options.y) {
+        if ('max' in options.y) {
           area.y.max = options.y.min * -1;
         }
       }
-      svg.setAttributeNS(null, "viewBox", [area.x.min, area.y.min, area.x.max - area.x.min, area.y.max - area.y.min].join(" "));
+      svg.setAttributeNS(null, 'viewBox', [area.x.min, area.y.min, area.x.max - area.x.min, area.y.max - area.y.min].join(' '));
 
-      gradient.setAttributeNS(null, "x1", 0);
-      gradient.setAttributeNS(null, "x2", 0);
+      gradient.setAttributeNS(null, 'x1', 0);
+      gradient.setAttributeNS(null, 'x2', 0);
       if (options.reverseGradient) {
-        gradient.setAttributeNS(null, "y1", area.y.max);
-        gradient.setAttributeNS(null, "y2", area.y.min);
+        gradient.setAttributeNS(null, 'y1', area.y.max);
+        gradient.setAttributeNS(null, 'y2', area.y.min);
       } else {
-        gradient.setAttributeNS(null, "y1", area.y.min);
-        gradient.setAttributeNS(null, "y2", area.y.max);
+        gradient.setAttributeNS(null, 'y1', area.y.min);
+        gradient.setAttributeNS(null, 'y2', area.y.max);
       }
     }
 
     updateViewBox();
 
-    var line = document.createElementNS(ns, "path");
+    var line = document.createElementNS(ns, 'path');
     svg.appendChild(line);
     //line.setAttributeNS(null,"vector-effect","non-scaling-stroke");
-    line.setAttributeNS(null, "stroke-width", "0.1");
-    line.setAttributeNS(null, "fill", "none");
-    line.setAttributeNS(null, "stroke", "url(#" + gradient.getAttribute("id") + ")");
-    line.setAttributeNS(null, "d", "M" + path.join(" L"));
+    line.setAttributeNS(null, 'stroke-width', '0.1');
+    line.setAttributeNS(null, 'fill', 'none');
+    line.setAttributeNS(null, 'stroke', 'url(#' + gradient.getAttribute('id') + ')');
+    line.setAttributeNS(null, 'd', 'M' + path.join(' L'));
 
     line.addData = function (newData) {
 
@@ -1014,7 +1017,7 @@ var AwmUtil = {
         newData.y = diff;
       }
 
-      path.push([newData.x - x_correction, newData.y * -1].join(","));
+      path.push([newData.x - x_correction, newData.y * -1].join(','));
       if (options.x && options.x.count) {
         if (path.length > options.x.count) {
           path.shift();
@@ -1022,7 +1025,7 @@ var AwmUtil = {
         }
       }
       updateMinMax(newData.x - x_correction, newData.y * -1);
-      this.setAttributeNS(null, "d", "M" + path.join(" L"));
+      this.setAttributeNS(null, 'd', 'M' + path.join(' L'));
       updateViewBox();
     };
     svg.addData = function (newData) {
@@ -1034,23 +1037,23 @@ var AwmUtil = {
   getBrowser: function () {
     var ua = window.navigator.userAgent;
 
-    if ((ua.indexOf("MSIE ") >= 0) || (ua.indexOf("Trident/") >= 0)) {
-      return "ie";
+    if ((ua.indexOf('MSIE ') >= 0) || (ua.indexOf('Trident/') >= 0)) {
+      return 'ie';
     }
-    if (ua.indexOf("Edge/") >= 0) {
-      return "edge";
+    if (ua.indexOf('Edge/') >= 0) {
+      return 'edge';
     }
-    if ((ua.indexOf("Opera") >= 0) || (ua.indexOf('OPR') >= 0)) {
-      return "opera";
+    if ((ua.indexOf('Opera') >= 0) || (ua.indexOf('OPR') >= 0)) {
+      return 'opera';
     }
-    if (ua.indexOf("Chrome") >= 0) {
-      return "chrome";
+    if (ua.indexOf('Chrome') >= 0) {
+      return 'chrome';
     }
-    if (ua.indexOf("Safari") >= 0) {
-      return "safari";
+    if (ua.indexOf('Safari') >= 0) {
+      return 'safari';
     }
-    if (ua.indexOf("Firefox") >= 0) {
-      return "firefox";
+    if (ua.indexOf('Firefox') >= 0) {
+      return 'firefox';
     }
     return false; //unknown
   },
