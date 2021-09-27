@@ -39,8 +39,8 @@ function AwmVideo(streamName, options) {
     height: false,        // No set height
     maxwidth: false,      // No max width (apart from targets dimensions)
     maxheight: false,     // No max height (apart from targets dimensions)
-    ABR_resize: true,     //for supporting wrappers: when the player resizes, request a video track that matches the resolution best
-    ABR_bitrate: true,    //for supporting wrappers: when there are playback issues, request a lower bitrate video track
+    ABR_resize: false,     //for supporting wrappers: when the player resizes, request a video track that matches the resolution best
+    ABR_bitrate: false,    //for supporting wrappers: when there are playback issues, request a lower bitrate video track
     AwmVideoObject: false, // No reference object is passed
     metrics: false // No metrics module passed. Will Use default metric module
   }, options);
@@ -704,7 +704,7 @@ function AwmVideo(streamName, options) {
             }
             if ((size.width != oldsize.width) || (size.height != oldsize.height)) {
               AwmVideo.log('Player size calculated: ' + size.width + ' x ' + size.height + ' px');
-              AwmVideo.event.send('player_resize', size, AwmVideo.video);
+              AwmUtil.event.send('player_resize', size, AwmVideo.video);
             }
             return true;
           };
@@ -894,10 +894,6 @@ function AwmVideo(streamName, options) {
           AwmVideo.player.onreadylist[i]();
         }
 
-        AwmUtil.event.send("initialized", null, options.target);
-        AwmVideo.log("Initialized");
-
-
         try {
           if (AwmVideo.metrics || AwmVideo.options.metrics) {
             AwmVideo.metrics = AwmUtil.object.extend({}, AwmVideo.options.metrics);
@@ -910,6 +906,8 @@ function AwmVideo(streamName, options) {
           AwmVideo.log("Couldn't start statistic module" + e.message);
         }
 
+        AwmUtil.event.send("initialized", null, options.target);
+        AwmVideo.log("Initialized");
         if (AwmVideo.options.callback) {
           options.callback(AwmVideo);
         }

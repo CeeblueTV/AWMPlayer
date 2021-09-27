@@ -176,11 +176,11 @@ function getAwmAdjustableMonitor() {
     trackIdListener: null,
 
     init: function () {
-      this.addTrackIdListener();
-
       if (this.vars.active) {
         return;
       } //it's already running, don't bother
+
+      this.addTrackIdListener();
 
       this.AwmVideo.log("Enabling monitor");
 
