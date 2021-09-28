@@ -31,6 +31,7 @@
 </head>
 <body>
 <span id="protocol-caption" style="color: #DDDDDD"></span>
+<span id="resolution-caption" style="color: #DDDDDD"></span>
 <div class="awmvideo" id="adaptive-video-player"></div>
 
 <script src="../dist/player.js"></script>
@@ -40,6 +41,7 @@
   AwmSkins.dev.css.skin = '../dist/skins/dev.css';
 
   const protocolCaptionElement = document.getElementById('protocol-caption');
+  const resolutionCaptionElement = document.getElementById('resolution-caption');
   const awmElement = document.getElementById('adaptive-video-player');
 
   const PROTOCOL_LABELS = {
@@ -50,10 +52,19 @@
   };
 
   const PROTOCOL_CHANGE_EVENT = 'protocol_name';
+  let tracksList = {};
 
   // Event that fires when protocol changed. Return new protocol name
   awmElement.addEventListener(PROTOCOL_CHANGE_EVENT, function (event) {
     protocolCaptionElement.innerText = PROTOCOL_LABELS[event.message];
+  });
+  awmElement.addEventListener('playerUpdate_trackChanged', ({ message }) => {
+    if (message.type === 'audio') {
+      return;
+    }
+
+    const track = Object.values(tracksList).filter(e => e.idx === message.trackid)[0];
+    resolutionCaptionElement.innerText = `${track.width}x${track.height}`;
   });
   // Logging setup (optional). Event that fires when something were logged
   awmElement.addEventListener('log', function (log) {
@@ -61,6 +72,7 @@
   });
   // Event that fires when got info from stream
   awmElement.addEventListener('haveStreamInfo', function (event) {
+    tracksList = event.message.meta.tracks;
     console.log('Event: StreamInfo (', JSON.stringify(event.message), ')');
   });
 
