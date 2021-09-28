@@ -115,7 +115,6 @@ p.prototype.build = function (AwmVideo, callback) {
   //this function is called both when the websocket is ready and the media source is ready - both should be open to proceed
   function checkReady() {
     if ((player.ws.readyState == player.ws.OPEN) && (player.ms.readyState == 'open') && (player.sb)) {
-      callback(video);
       if (AwmVideo.options.autoplay) {
         player.api.play();
       }
@@ -1215,4 +1214,6 @@ p.prototype.build = function (AwmVideo, callback) {
   };
 
   this.monitor.getBitRate();
+
+  callback(video);
 };
