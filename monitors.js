@@ -168,7 +168,7 @@ function getAwmAdjustableMonitor() {
     qualitySwitchUpTimeout: 0.0,
     qualitySwitchPreviousMode: null,
     qualitySwitchTimestamp: null,
-    currentBitrateIndex: null,
+    currentBitrateIndex: -1,
     SWITCH_MODE: {
       UP: 'UP',
       DOWN: 'DOWN',
@@ -234,10 +234,6 @@ function getAwmAdjustableMonitor() {
 
         this.result = this.SWITCH_MODE.INIT;
         return true;
-      }
-
-      if (this.currentBitrateIndex === -1) {
-        return false;
       }
 
       // On bad score
@@ -357,6 +353,10 @@ function getAwmAdjustableMonitor() {
 
       // Lowest bitrate by default
       let bitrateIndex = this.tracklist.length - 1;
+
+      if (this.currentBitrateIndex === -1) {
+        this.currentBitrateIndex = bitrateIndex;
+      }
 
       if (this.result === this.SWITCH_MODE.UP) {
         bitrateIndex = Math.max(this.currentBitrateIndex - 1, 0);
