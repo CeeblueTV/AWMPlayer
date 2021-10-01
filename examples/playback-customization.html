@@ -63,7 +63,7 @@
       return;
     }
 
-    const track = Object.values(tracksList).filter(e => e.idx === message.trackid)[0];
+    const track = Object.values(tracksList).filter(e => e.idx === +message.trackid)[0];
     resolutionCaptionElement.innerText = `${track.width}x${track.height}`;
   });
   // Logging setup (optional). Event that fires when something were logged
@@ -91,6 +91,7 @@
         ['type', ['webrtc', 'ws/video/mp4', 'html5/video/mp4', 'html5/application/vnd.apple.mpegurl']],
       ]
     },
+    forceTrack: true,
     // Observe stream and change quality/protocol if needed.
     monitor: {
       // Here you can add fields to override them in monitor (default AdjustableMonitor monitor). If any function would be here it just replace AdjustableMonitor;

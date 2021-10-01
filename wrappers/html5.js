@@ -113,7 +113,11 @@ p.prototype.build = function (AwmVideo, callback) {
   video.setAttribute('playsinline', ''); //iphones. effin' iphones.
 
   var source = document.createElement('source');
-  source.setAttribute('src', AwmVideo.source.url);
+  const URI = new URL(AwmVideo.source.url);
+  if (AwmVideo.info.forceTrackIdxes.H264) {
+    URI.searchParams.append('video', AwmVideo.info.forceTrackIdxes.H264);
+  }
+  source.setAttribute('src', URI.href);
   video.source = source;
   video.appendChild(source);
   source.type = shortmime.join('/');

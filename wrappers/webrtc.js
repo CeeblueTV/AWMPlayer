@@ -27,6 +27,7 @@ p.prototype = new AwmPlayer();
 p.prototype.build = function (AwmVideo, callback) {
   var me = this;
   me.name = 'webrtc';
+  me.selectedVideoCodec = "H264"
 
   if ((typeof WebRTCBrowserEqualizerLoaded == 'undefined') || (!WebRTCBrowserEqualizerLoaded)) {
     //load it
@@ -216,6 +217,10 @@ p.prototype.build = function (AwmVideo, callback) {
         case 'on_connected': {
           thisWebRTCPlayer.isConnected = true;
           thisWebRTCPlayer.isConnecting = false;
+          const video = AwmVideo.info.forceTrackIdxes[me.selectedVideoCodec];
+          if (video) {
+            thisWebRTCPlayer.setTrack({ video });
+          }
           break;
         }
         case 'on_answer_sdp': {
@@ -276,6 +281,7 @@ p.prototype.build = function (AwmVideo, callback) {
 
       checkH264(5).catch(function () {
         AwmVideo.log('Beware: this device does not seem to be able to play H264.');
+        me.selectedVideoCodec = 'VP8';
       }).finally(function () {
         thisWebRTCPlayer.signaling = new WebRTCSignaling(thisWebRTCPlayer.on_event);
         var opts = {};

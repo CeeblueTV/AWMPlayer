@@ -30,6 +30,7 @@ function AwmVideo(streamName, options) {
     forcePlayer: false,   // Don't force a player
     forceSource: false,   // Don't force a source
     forcePriority: false, // No custom priority sorting
+    forceTrack: false,    // Don't force track selecting
     monitor: false,       // No custom monitoring
     reloadDelay: false,   // Don't override default reload delay
     urlappend: false,     // Don't add this to urls
@@ -39,10 +40,10 @@ function AwmVideo(streamName, options) {
     height: false,        // No set height
     maxwidth: false,      // No max width (apart from targets dimensions)
     maxheight: false,     // No max height (apart from targets dimensions)
-    ABR_resize: false,     //for supporting wrappers: when the player resizes, request a video track that matches the resolution best
-    ABR_bitrate: false,    //for supporting wrappers: when there are playback issues, request a lower bitrate video track
-    AwmVideoObject: false, // No reference object is passed
-    metrics: false // No metrics module passed. Will Use default metric module
+    ABR_resize: false,    //for supporting wrappers: when the player resizes, request a video track that matches the resolution best
+    ABR_bitrate: false,   //for supporting wrappers: when there are playback issues, request a lower bitrate video track
+    AwmVideoObject: false,// No reference object is passed
+    metrics: false        // No metrics module passed. Will Use default metric module
   }, options);
 
   if (options.host) {
@@ -331,6 +332,29 @@ function AwmVideo(streamName, options) {
     return false;
   }
 
+  function setForceIdxes(streamInfo, options) {
+    if (options.forceTrack === false) {
+      return;
+    }
+
+    try {
+      const tracksList = Object.values(streamInfo.meta.tracks).sort((first, second) => first.bps >= second.bps ? -1 : 1);
+
+      const codecs = new Set(tracksList.map(e => e.codec));
+
+      const forceTrackIdxes = { };
+
+      for (const codec of codecs) {
+        const tracks = tracksList.filter(e => e.codec === codec);
+        forceTrackIdxes[codec] = tracks[tracks.length - 1].idx;
+      }
+
+      AwmVideo.info.forceTrackIdxes = forceTrackIdxes;
+    } catch (e) {
+      AwmVideo.log(` couldn't' get force idx`);
+    }
+  }
+
   function onStreamInfo(d) {
 
     if ((AwmVideo.player) && (AwmVideo.player.api) && (AwmVideo.player.api.unload)) {
@@ -340,8 +364,10 @@ function AwmVideo(streamName, options) {
 
     AwmVideo.info = d;
     AwmVideo.info.updated = new Date();
+    AwmVideo.info.forceTrackIdxes = {};
     AwmUtil.event.send('haveStreamInfo', d, AwmVideo.options.target);
     AwmVideo.log('Stream info was loaded succesfully.');
+    setForceIdxes(d, options);
 
     if ('error' in d) {
       var e = d.error;
