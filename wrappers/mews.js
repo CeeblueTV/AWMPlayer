@@ -401,6 +401,11 @@ p.prototype.build = function (AwmVideo, callback) {
 
       this.ws.onopen = function () {
         this.wasConnected = true;
+
+        if (AwmVideo.info.forceTrackIdxes.H264) {
+          player.api.setTracks({ video: AwmVideo.info.forceTrackIdxes.H264 });
+        }
+
         resolve();
       };
       this.ws.onerror = function () {
