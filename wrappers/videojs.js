@@ -115,6 +115,12 @@ p.prototype.build = function (AwmVideo, callback) {
       AwmVideo.log('Building videojs');
       me.videojs = videojs(ele, vjsopts, function () {
         AwmVideo.log('Videojs initialized');
+
+        // Create an event to pass this to the skin
+        AwmUtil.event.send('playerUpdate_trackChanged', {
+          type: 'video',
+          trackid:  AwmVideo.info.forceTrackIdxes.H264
+        }, AwmVideo.video);
       });
 
       AwmUtil.event.addListener(ele, 'error', function (e) {
