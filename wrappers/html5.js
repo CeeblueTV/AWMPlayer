@@ -275,5 +275,17 @@ p.prototype.build = function (AwmVideo, callback) {
     this.api.style.height = size.height + 'px';
   };
 
+  // Fire ones when player find media data
+  var canplayEvent = AwmUtil.event.addListener(video, 'progress', function () {
+    AwmUtil.event.removeListener(canplayEvent);
+
+    // Create an event to pass this to the skin
+    AwmUtil.event.send('playerUpdate_trackChanged', {
+      type: 'video',
+      trackid:  AwmVideo.info.forceTrackIdxes.H264
+    }, AwmVideo.video);
+  });
+
+
   callback(video);
 };

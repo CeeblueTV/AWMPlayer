@@ -64,7 +64,9 @@
     }
 
     const track = Object.values(tracksList).filter(e => e.idx === +message.trackid)[0];
-    resolutionCaptionElement.innerText = `${track.width}x${track.height}`;
+    if (track) {
+      resolutionCaptionElement.innerText = `${track.width}x${track.height}`;
+    }
   });
   // Logging setup (optional). Event that fires when something were logged
   awmElement.addEventListener('log', function (log) {

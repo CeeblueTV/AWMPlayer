@@ -194,7 +194,7 @@ function getAwmAdjustableMonitor() {
 
     addTrackIdListener: function () {
       if (this.trackIdListener === null) {
-        this.trackIdListener = this.AwmVideo.options.target.addEventListener('playerUpdate_trackChanged', function (event) {
+        this.trackIdListener = this.AwmVideo.options.target.addEventListener('playerUpdate_trackChanged', (event) => {
           let track = event.message;
           if (track.type === 'video') {
             this.videoTrackId = track.trackid;
@@ -302,11 +302,11 @@ function getAwmAdjustableMonitor() {
           videoTracks = Object.values(tracks.video);
           this.AwmVideo.log(`Monitor: Action track selection for '${this.AwmVideo.source.type}'`);
           if (this.AwmVideo.source.type === 'webrtc') {
-            this.AwmVideo.log(`Monitor: Action track selection video track id ${this.AwmVideo.options.target.videoTrackId}`);
-            if (this.AwmVideo.options.target.videoTrackId !== undefined) {
+            this.AwmVideo.log(`Monitor: Action track selection video track id ${this.videoTrackId}`);
+            if (this.videoTrackId !== undefined) {
               let videoTrackIndex = videoTracks.findIndex(item => {
                 const trackid = 'idx' in item ? item.idx : item.trackid;
-                return trackid === this.AwmVideo.options.target.videoTrackId;
+                return trackid === this.videoTrackId;
               });
               if (videoTrackIndex >= 0) {
                 let codec = videoTracks[videoTrackIndex].codec;
@@ -324,10 +324,10 @@ function getAwmAdjustableMonitor() {
         this.tracklist = videoTracks;
         this.AwmVideo.log(`Monitor: Track list ${this.tracklist.map(item => '\'' + item.displayName + '\'').join(', ')}`);
 
-        if (this.AwmVideo.options.target.videoTrackId !== undefined) {
+        if (this.videoTrackId !== undefined) {
           let videoTrackIndex = videoTracks.findIndex(item => {
             const trackid = 'idx' in item ? item.idx : item.trackid;
-            return trackid === this.AwmVideo.options.target.videoTrackId;
+            return trackid === this.videoTrackId;
           });
           if (videoTrackIndex >= 0) {
             this.currentBitrateIndex = videoTrackIndex;
