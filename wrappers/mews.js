@@ -865,6 +865,10 @@ p.prototype.build = function (AwmVideo, callback) {
 
       player.currentTracks = tracks;
     }
+
+    if (tracks.length !== player.currentTracks.length) {
+      player.currentTracks = tracks;
+    }
   }
 
 
