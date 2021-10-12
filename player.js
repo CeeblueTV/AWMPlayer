@@ -17,33 +17,34 @@ function AwmVideo(streamName, options) {
     options = AwmUtil.object.extend(AwmUtil.object.extend({}, awmoptions), options);
   }
   options = AwmUtil.object.extend({
-    host: null,           // Override awm server host (default is the host that player.js is loaded from)
-    autoplay: true,       // Start playing when loaded
-    controls: true,       // Show controls (AwmControls when available)
-    loop: false,          // Don't loop when the stream has finished
-    poster: false,        // Don't show an image before the stream has started
-    muted: false,         // Don't start muted
-    callback: false,      // Don't call a function when the player has finished building
-    streaminfo: false,    // Don't use this streaminfo but collect it from the awmserverhost
-    startCombo: false,    // Start looking for a player/source match at the start
-    forceType: false,     // Don't force a mimetype
-    forcePlayer: false,   // Don't force a player
-    forceSource: false,   // Don't force a source
-    forcePriority: false, // No custom priority sorting
-    forceTrack: false,    // Don't force track selecting
-    monitor: false,       // No custom monitoring
-    reloadDelay: false,   // Don't override default reload delay
-    urlappend: false,     // Don't add this to urls
-    setTracks: false,     // Don't set tracks
-    fillSpace: false,     // Don't fill parent container
-    width: false,         // No set width
-    height: false,        // No set height
-    maxwidth: false,      // No max width (apart from targets dimensions)
-    maxheight: false,     // No max height (apart from targets dimensions)
-    ABR_resize: false,    //for supporting wrappers: when the player resizes, request a video track that matches the resolution best
-    ABR_bitrate: false,   //for supporting wrappers: when there are playback issues, request a lower bitrate video track
-    AwmVideoObject: false,// No reference object is passed
-    metrics: false        // No metrics module passed. Will Use default metric module
+    host: null,                   // Override awm server host (default is the host that player.js is loaded from)
+    autoplay: true,               // Start playing when loaded
+    controls: true,               // Show controls (AwmControls when available)
+    loop: false,                  // Don't loop when the stream has finished
+    poster: false,                // Don't show an image before the stream has started
+    muted: false,                 // Don't start muted
+    callback: false,              // Don't call a function when the player has finished building
+    streaminfo: false,            // Don't use this streaminfo but collect it from the awmserverhost
+    startCombo: false,            // Start looking for a player/source match at the start
+    forceType: false,             // Don't force a mimetype
+    forcePlayer: false,           // Don't force a player
+    forceSource: false,           // Don't force a source
+    forcePriority: false,         // No custom priority sorting
+    forceTrack: false,            // Don't force track selecting
+    monitor: false,               // No custom monitoring
+    reloadDelay: false,           // Don't override default reload delay
+    urlappend: false,             // Don't add this to urls
+    setTracks: false,             // Don't set tracks
+    fillSpace: false,             // Don't fill parent container
+    width: false,                 // No set width
+    height: false,                // No set height
+    maxwidth: false,              // No max width (apart from targets dimensions)
+    maxheight: false,             // No max height (apart from targets dimensions)
+    ABR_resize: false,            //for supporting wrappers: when the player resizes, request a video track that matches the resolution best
+    ABR_bitrate: false,           //for supporting wrappers: when there are playback issues, request a lower bitrate video track
+    AwmVideoObject: false,        // No reference object is passed
+    metrics: false,               // No metrics module passed. Will Use default metric module
+    reporting: false              // For supporting new metrics module. (!!! Don't activate since module is not ready)
   }, options);
 
   if (options.host) {
@@ -1015,7 +1016,7 @@ function AwmVideo(streamName, options) {
         this.wasConnected = true;
 
         //report player status to CeeblueCloud
-        if (!AwmVideo.reporting) {
+        if (!AwmVideo.reporting && AwmVideo.options.reporting) {
           AwmVideo.reporting = {
             stats: {
               set: function (key, value) {
@@ -1458,7 +1459,9 @@ function AwmVideo(streamName, options) {
     }
     AwmUtil.empty(this.options.target);
 
-    AwmVideo.metrics.stop();
+    if (AwmVideo.metrics) {
+      AwmVideo.metrics.stop();
+    }
 
     delete this.video;
 
