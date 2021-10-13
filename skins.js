@@ -1366,7 +1366,7 @@ AwmSkins["default"] = {
 
       var AwmVideo = this;
 
-      //determine which functions to use.. 
+      //determine which functions to use..
       var requestfuncs = ["requestFullscreen", "webkitRequestFullscreen", "mozRequestFullScreen", "msRequestFullscreen", "webkitEnterFullscreen"];
       var fullscreenableElements = [function () {
         return AwmVideo.container;
@@ -2924,7 +2924,9 @@ function AwmSkin(AwmVideo) {
       styles.push(a);
     }
   }
-  this.css = styles; //overwrite 
+  this.css = styles; //overwrite
 
 
 }
+
+export { AwmSkins };
