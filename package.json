@@ -1,11 +1,10 @@
 {
   "name": "awm-player",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "AwmPlayer",
   "scripts": {
-    "build": "./build.sh",
-    "lint": "eslint ./dist/player.js",
-    "minimize": "./minimize.sh"
+    "build": "./build.sh $npm_package_version $(date +%Y-%m-%d-%H:%M:%S)",
+    "lint": "eslint ./dist/player.js"
   },
   "dependencies": {
     "clean-css-cli": "^4.2.1",

@@ -8,10 +8,16 @@ mkdir  $DIST_PATH
 
 echo "Building player ...";
 PLAYER_PATH="$DIST_PATH/player.js"
+VERSION_DATE_LINE="/*${1}~${2}*/"
+
+#adding version&date comment to start of file
+echo "$VERSION_DATE_LINE" | tee $PLAYER_PATH
+
 cat "./util.js"             >> $PLAYER_PATH
 cat "./skins.js"            >> $PLAYER_PATH
 cat "./controls.js"         >> $PLAYER_PATH
-cat "./monitor.js"          >> $PLAYER_PATH
+cat "./monitors.js"          >> $PLAYER_PATH
+cat "./metrics.js"          >> $PLAYER_PATH
 cat "./player.js"           >> $PLAYER_PATH
 cat "./wrappers/html5.js"   >> $PLAYER_PATH
 cat "./wrappers/videojs.js" >> $PLAYER_PATH
@@ -41,6 +47,10 @@ mkdir "$DIST_PATH/min"
 echo "Minimizing player ...";
 MIN_PLAYER_PATH="$DIST_PATH/min/player.js"
 terser -mc -o $MIN_PLAYER_PATH -- $PLAYER_PATH
+
+#adding version&date comment to start of file
+echo "$VERSION_DATE_LINE" | cat - $MIN_PLAYER_PATH > temp && mv temp $MIN_PLAYER_PATH
+
 echo "Done '$MIN_PLAYER_PATH'"
 
 mkdir "$DIST_PATH/min/skins"

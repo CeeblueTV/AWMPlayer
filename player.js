@@ -39,7 +39,8 @@ function AwmVideo(streamName, options) {
     height: false,        // No set height
     maxwidth: false,      // No max width (apart from targets dimensions)
     maxheight: false,     // No max height (apart from targets dimensions)
-    AwmVideoObject: false // No reference object is passed
+    AwmVideoObject: false, // No reference object is passed
+    metrics: false // No metrics module passed. Will Use default metric module
   }, options);
 
   if (options.host) {
@@ -444,146 +445,7 @@ function AwmVideo(streamName, options) {
         if ("api" in AwmVideo.player) {
 
           // Add monitoring
-          AwmVideo.monitor = {
-            AwmVideo: AwmVideo,      // Added here so that the other functions can use it. Do not override it.
-            delay: 1,                // The amount of seconds between measurements.
-            averagingSteps: 20,      // The amount of measurements that are saved.
-            vars: {
-              values: [],
-              score: false,
-              active: false
-            },
-            threshold: function () { // Returns the score threshold below which the "action" should be taken
-              if (this.AwmVideo.source.type == "webrtc") {
-                return 0.95;
-              }
-              return 0.75;
-            },
-
-            init: function () {             //starts the monitor and defines the basic shape of the procedure it follows. This is called when the stream should begin playback.
-
-              if (this.vars.active) {
-                return;
-              } //it's already running, don't bother
-              this.AwmVideo.log("Enabling monitor");
-
-
-              this.AwmVideo.monitor.vars.active = true;
-
-              this.repeat()
-
-            },
-            destroy: function () {          //stops the monitor. This is called when the stream has ended or has been paused by the viewer.
-
-              if (!this.vars.active) {
-                return;
-              } //it's not running, don't bother]
-
-              this.AwmVideo.log("Disabling monitor");
-              this.AwmVideo.timers.stop(this.vars.timer);
-
-              this.vars.timer = null;
-              this.vars.values = [];
-              this.vars.active = false;
-            },
-            reset: function () {            //clears the monitor’s history. This is called when the history becomes invalid because of a seek or change in the playback rate.
-
-              if ((!this.vars) || (!this.vars.active)) {
-                //it's not running, start it up
-                this.init();
-                return;
-              }
-
-              this.AwmVideo.log("Resetting monitor");
-              this.vars.values = [];
-            },
-            calcScore: function () {        //calculate and save the current score
-
-              var list = this.vars.values;
-              list.push(this.getValue()); //add the current value to the history
-
-              if (list.length <= 1) {
-                return false;
-              } //no history yet, can't calculate a score
-
-              var score = this.valueToScore(list[0], list[list.length - 1]); //should be 1, decreases if bad
-
-              //kick the oldest value from the array
-              if (list.length > this.averagingSteps) {
-                list.shift();
-              }
-
-              //the final score is the maximum of the averaged and the current value
-              score = Math.max(score, list[list.length - 1].score);
-
-              this.vars.score = score;
-              return score;
-            },
-            valueToScore: function (a, b) {
-              // Calculate the moving average
-              // If this returns > 1, the video played faster than the clock
-              // If this returns < 0, the video time went backwards
-              var rate = 1;
-              if (("player" in this.AwmVideo) && ("api" in this.AwmVideo.player) && ("playbackRate" in this.AwmVideo.player.api)) {
-                rate = this.AwmVideo.player.api.playbackRate;
-              }
-              return (b.video - a.video) / (b.clock - a.clock) / rate;
-            },
-            getValue: function () {
-              // Save the current testing value and time
-              // If the video plays, this should keep a constant value.
-              // If the video is stalled, it will go up with 1sec/sec.
-              // If the video is playing faster, it will go down.
-              // current clock time - current playback time
-              var result = {
-                clock: (new Date()).getTime() * 1e-3,
-                video: this.AwmVideo.player.api.currentTime,
-              };
-              if (this.vars.values.length) {
-                result.score = this.valueToScore(this.vars.values[this.vars.values.length - 1], result);
-              }
-
-              return result;
-            },
-            check: function (score) {
-              // Determine if the current score is good enough. It must return true if the score fails.
-
-              if (this.vars.values.length < this.averagingSteps * 0.5) {
-                return false;
-              } //gather enough values first
-
-              if (score < this.threshold()) {
-                return true;
-              }
-            },
-            action: function () {
-              // What to do when the check is failed
-              var score = this.vars.score;
-
-              // passive: only if nothing is already showing
-              this.AwmVideo.showError("Poor playback: " + Math.max(0, Math.round(score * 100)) + "%", {
-                passive: true,
-                reload: true,
-                nextCombo: true,
-                ignore: true,
-                type: "poor_playback"
-              });
-            },
-            repeat: function () {
-              if ((this.vars) && (this.vars.active)) {
-                this.vars.timer = this.AwmVideo.timers.start(() => {
-
-                  var score = this.calcScore();
-                  if (score !== false) {
-                    if (this.check(score)) {
-                      this.action();
-                    }
-                  }
-                  this.repeat();
-                }, this.delay * 1e3);
-              }
-            },
-          };
+          AwmVideo.monitor = getAwmDefaultMonitor(AwmVideo);
 
           var events;
           //overwrite (some?) monitoring functions/values with custom ones if specified
@@ -591,7 +453,7 @@ function AwmVideo(streamName, options) {
             AwmVideo.monitor.default = AwmUtil.object.extend({}, AwmVideo.monitor);
 
             if (Object.getOwnPropertyNames(AwmVideo.options.monitor).filter(item => typeof AwmVideo.options.monitor[item] === 'function').length === 0) {
-              AwmUtil.object.extend(AwmVideo.monitor, AdjustableMonitor);
+              AwmUtil.object.extend(AwmVideo.monitor, getAwmAdjustableMonitor());
             }
 
             if (AwmVideo.options.monitor) {
@@ -841,6 +703,11 @@ function AwmVideo(streamName, options) {
                 //actually switch to the new source url
                 this.setSourceParams(newurl, usetracks);
 
+                AwmUtil.event.send("playerUpdate_trackChanged", {
+                  type: Object.keys(usetracks)[0],
+                  trackid: usetracks[Object.keys(usetracks)[0]]
+                }, AwmVideo.video);
+
                 //restore video position
                 if (AwmVideo.info.type != "live") {
                   var f = function () {
@@ -940,6 +807,20 @@ function AwmVideo(streamName, options) {
 
         AwmUtil.event.send("initialized", null, options.target);
         AwmVideo.log("Initialized");
+
+
+        try {
+          if (AwmVideo.metrics || AwmVideo.options.metrics) {
+            AwmVideo.metrics = AwmUtil.object.extend({}, AwmVideo.options.metrics);
+            AwmVideo.metrics = AwmUtil.object.extend(getAwmMetric(AwmVideo, AwmVideo.stream), AwmVideo.metrics);
+
+            AwmVideo.metrics.start();
+          }
+
+        } catch (e) {
+          AwmVideo.log("Couldn't start statistic module" + e.message);
+        }
+
         if (AwmVideo.options.callback) {
           options.callback(AwmVideo);
         }
@@ -1260,6 +1141,9 @@ function AwmVideo(streamName, options) {
       delete this.container;
     }
     AwmUtil.empty(this.options.target);
+
+    AwmVideo.metrics.stop();
+
     delete this.video;
 
   };

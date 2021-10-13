@@ -622,6 +622,13 @@ p.prototype.build = function (AwmVideo, callback) {
                 clear();
 
               }
+
+              if (msg.data.codecs && msg.data.codecs.length) {
+                AwmUtil.event.send("playerUpdate_trackChanged", {
+                  codecsId: msg.data.codecs,
+                  tracksId: msg.data.tracks
+                }, AwmVideo.video);
+              }
             }
           }
           if (msg.type in this.listeners) {
