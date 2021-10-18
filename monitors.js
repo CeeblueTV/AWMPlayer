@@ -368,26 +368,28 @@ function getAwmAdjustableMonitor() {
         return;
       }
 
+      const duration = (Date.now() - this.qualitySwitchTimestamp) * 0.001;
+
       if (this.result === this.SWITCH_MODE.DOWN) {
-        // If DOWN -> DOWN - clear UP timeout
-        if (this.qualitySwitchPreviousMode === this.SWITCH_MODE.DOWN) {
-          this.qualitySwitchUpTimeout = this.QUALITY_SWITCH_TIMEOUTS[0];
+        // If DOWN -> DOWN - decrease UP timeout if we do not decrease too often
+        if (this.qualitySwitchPreviousMode === this.SWITCH_MODE.DOWN && duration >= this.QUALITY_SWITCH_DOWN_TIMEOUT * 2) {
+          const currentTimeoutIndex = this.QUALITY_SWITCH_TIMEOUTS.indexOf(this.qualitySwitchUpTimeout);
+          if (currentTimeoutIndex > 0) {
+            this.qualitySwitchUpTimeout = this.QUALITY_SWITCH_TIMEOUTS[currentTimeoutIndex - 1];
+          }
         }
 
         // if UP -> DOWN
         // Increase switching up timeout, if we attempting to often
         if (this.qualitySwitchPreviousMode === this.SWITCH_MODE.UP) {
-          let duration = (Date.now() - this.qualitySwitchTimestamp) * 0.001;
-
           // Increase switching up timeout, if we attempting to often
           if (duration <= this.QUALITY_SWITCH_DOWN_TIMEOUT * 2) {
             let index = this.QUALITY_SWITCH_TIMEOUTS.indexOf(this.qualitySwitchUpTimeout) + 1;
-            if (index >= this.QUALITY_SWITCH_TIMEOUTS.length) {
-              index = 1;
-            }
-            this.qualitySwitchUpTimeout = this.QUALITY_SWITCH_TIMEOUTS[index];
 
-            this.AwmVideo.log(`Monitor: Quality switch up timeout => ${this.qualitySwitchUpTimeout}`);
+            if (index < this.QUALITY_SWITCH_TIMEOUTS.length) {
+              this.qualitySwitchUpTimeout = this.QUALITY_SWITCH_TIMEOUTS[index];
+              this.AwmVideo.log(`Monitor: Quality switch up timeout => ${this.qualitySwitchUpTimeout}`);
+            }
           }
         }
       }
