@@ -294,6 +294,13 @@ function getAwmAdjustableMonitor() {
       return false;
     },
 
+    decreaseQualityTimeout: function () {
+      const currentTimeoutIndex = this.QUALITY_SWITCH_TIMEOUTS.indexOf(this.qualitySwitchUpTimeout);
+      if (currentTimeoutIndex > 0) {
+        this.qualitySwitchUpTimeout = this.QUALITY_SWITCH_TIMEOUTS[currentTimeoutIndex - 1];
+      }
+    },
+
     action: function () {
       if (!this.hasOwnProperty('tracklist')) {
         let tracks = AwmUtil.tracks.parse(this.AwmVideo.info.meta.tracks);
@@ -364,19 +371,20 @@ function getAwmAdjustableMonitor() {
         bitrateIndex = Math.min(this.currentBitrateIndex + 1, this.tracklist.length - 1);
       }
 
+      const duration = (Date.now() - this.qualitySwitchTimestamp) * 0.001;
+
       if (bitrateIndex === this.currentBitrateIndex) {
+        if (this.qualitySwitchPreviousMode === this.SWITCH_MODE.UP && duration > this.qualitySwitchUpTimeout) {
+          this.decreaseQualityTimeout();
+        }
+
         return;
       }
-
-      const duration = (Date.now() - this.qualitySwitchTimestamp) * 0.001;
 
       if (this.result === this.SWITCH_MODE.DOWN) {
         // If DOWN -> DOWN - decrease UP timeout if we do not decrease too often
         if (this.qualitySwitchPreviousMode === this.SWITCH_MODE.DOWN && duration >= this.QUALITY_SWITCH_DOWN_TIMEOUT * 2) {
-          const currentTimeoutIndex = this.QUALITY_SWITCH_TIMEOUTS.indexOf(this.qualitySwitchUpTimeout);
-          if (currentTimeoutIndex > 0) {
-            this.qualitySwitchUpTimeout = this.QUALITY_SWITCH_TIMEOUTS[currentTimeoutIndex - 1];
-          }
+          this.decreaseQualityTimeout();
         }
 
         // if UP -> DOWN
