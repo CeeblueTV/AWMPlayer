@@ -1572,7 +1572,7 @@ AwmSkins['default'] = {
           return 0;
         });
         for (var j in tracktypes) {
-          var type = tracktypes[j];
+          const type = tracktypes[j];
           var t = tracks[type];
 
           if (type == 'subtitle') {
@@ -1711,7 +1711,7 @@ AwmSkins['default'] = {
           //there is more than one track of this type, and the player supports switching tracks
           if ((trackkeys.length > 1) && ('player' in AwmVideo) && ('api' in AwmVideo.player) && (('setTrack' in AwmVideo.player.api) || ('setTracks' in AwmVideo.player.api) || ('setSource' in AwmVideo.player.api))) {
             //show a select box
-            var select = document.createElement('select');
+            const select = document.createElement('select');
             select.title = 'Select another ' + type + ' track';
             selections[type] = select;
             select.trackType = type;
