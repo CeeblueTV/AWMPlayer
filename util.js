@@ -862,7 +862,7 @@ var AwmUtil = {
     }
   },
   isTouchDevice: function () {
-    return (('ontouchstart' in window) || (navigator.msMaxTouchPoints > 0));
+    return (('ontouchstart' in window) || (navigator.msMaxTouchPoints > 0) || (navigator.maxTouchPoints > 0));
     //return true;
   },
   getPos: function (element, cursorLocation) {
