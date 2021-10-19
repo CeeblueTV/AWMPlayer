@@ -4,6 +4,9 @@
 ## New Features
 - Added trackChanged event to HLS and MP4.
 - Added forceTrack that make wrappers start with certain track (with the lowest bitrate by default)
+- Added possibility to import the player using ECMAScript module system
+- Added possibility to use the player with TypeScript
+- Added possibility to use the package as npm dependency (at least as repository reference)
 
 ## Bug fixes
 - Metric/Reporting module fix
