@@ -116,7 +116,8 @@ p.prototype.build = function (AwmVideo, callback) {
   function checkReady() {
     if ((player.ws.readyState == player.ws.OPEN) && (player.ms.readyState == 'open') && (player.sb)) {
       if (AwmVideo.options.autoplay) {
-        player.api.play();
+        player.api.play().catch(function () {
+        });
       }
       return true;
     }
@@ -431,7 +432,8 @@ p.prototype.build = function (AwmVideo, callback) {
                 if (!player.sb) {
                   player.sbinit(msg.data.codecs);
                 } else {
-                  player.api.play();
+                  player.api.play().catch(function () {
+                  });
                 }
 
                 player.ws.removeListener('codec_data', f);
@@ -749,6 +751,10 @@ p.prototype.build = function (AwmVideo, callback) {
 
               break;
             }
+            case "pause": {
+              if (player.sb) { player.sb.paused = true; }
+              break;
+            }
           }
           if (msg.type in this.listeners) {
             for (var i = this.listeners[msg.type].length - 1; i >= 0; i--) { //start at last in case the listeners remove themselves
@@ -916,6 +922,17 @@ p.prototype.build = function (AwmVideo, callback) {
   this.api = {
     play: function (skipToLive) {
       return new Promise(function (resolve, reject) {
+        if (!video.paused) {
+          //we're already playing, what are you doing?
+          resolve();
+          return;
+        }
+
+        if (("paused" in player.sb) && !player.sb.paused) {
+          video.play().then(resolve).catch(reject);
+          return;
+        }
+
         var f = function (e) {
           if (!player.sb) {
             AwmVideo.log('Attempting to play, but the source buffer is being cleared. Waiting for next on_time.');
@@ -932,7 +949,10 @@ p.prototype.build = function (AwmVideo, callback) {
                       video.currentTime = e.data.current * 1e-3;
                       AwmVideo.log('Setting live playback position to ' + AwmUtil.format.time(video.currentTime));
                     }
-                    video.play().then(resolve).catch(reject);
+                    video.play().then(resolve).catch(function(){
+                      //could not play video, pause the download
+                      return reject.apply(this,arguments);
+                    });
                     player.sb.paused = false;
                     player.sb.removeEventListener('updateend', g);
                   }
@@ -941,13 +961,24 @@ p.prototype.build = function (AwmVideo, callback) {
               player.sb.addEventListener('updateend', g);
             } else {
               player.sb.paused = false;
-              video.play().then(resolve).catch(reject);
+              video.play().then(resolve).catch(function(){
+                //could not play video, pause the download
+                player.api.pause();
+                return reject.apply(this,arguments);
+              });
             }
             player.ws.removeListener('on_time', f);
           } else if (e.data.current > video.currentTime) {
             player.sb.paused = false;
-            video.currentTime = e.data.current * 1e-3;
-            video.play().then(resolve).catch(reject);
+            video.play().then(resolve).catch(function(){
+              if (video.buffered.length && video.buffered.start(0) > video.currentTime) {
+                video.currentTime = video.buffered.start(0);
+                video.play().then(resolve).catch(reject);
+              }
+              else {
+                reject.apply(this,arguments);
+              }
+            });
             player.ws.removeListener('on_time', f);
           }
         };
