@@ -421,7 +421,7 @@ p.prototype.build = function (AwmVideo, callback) {
       this.ws.onclose = function () {
         AwmVideo.log('MP4 over WS: websocket closed');
 
-        if (this.wasConnected && (!AwmVideo.destroyed) && (AwmVideo.state == 'Stream is online') && (!(AwmVideo.video && AwmVideo.video.error))) {
+        if (this.wasConnected && (!AwmVideo.destroyed) && (!player.sb || !player.sb.paused) && (AwmVideo.state == 'Stream is online') && (!(AwmVideo.video && AwmVideo.video.error))) {
           AwmVideo.log('MP4 over WS: reopening websocket');
           player.wsconnect().then(function () {
             if (!player.sb) {
@@ -895,8 +895,29 @@ p.prototype.build = function (AwmVideo, callback) {
     }
     if (player.ws.readyState >= player.ws.CLOSING) {
       //throw "WebSocket has been closed already.";
+      AwmVideo.log('MP4 over WS: reopening websocket');
       player.wsconnect().then(function () {
+        if (!player.sb) {
+          //retrieve codec info
+          var f = function (msg) {
+            //got codec data, set up source buffer
+            if (!player.sb) {
+              player.sbinit(msg.data.codecs);
+            } else {
+              player.api.play().catch(function () {
+              });
+            }
+
+            player.ws.removeListener('codec_data', f);
+          };
+          player.ws.addListener('codec_data', f);
+          send({ type: 'request_codec_data', supported_codecs: AwmVideo.source.supportedCodecs });
+        } else {
+          player.api.play();
+        }
         send(cmd);
+      }, function () {
+        AwmVideo.error('Lost connection to the Media Server');
       });
       return;
     }
