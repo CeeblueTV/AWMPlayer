@@ -122,12 +122,18 @@ p.prototype.build = function (AwmVideo, callback) {
     }
   }
 
+  this.msoninit = []; //array of functions that will be executed once ms is open
   this.msinit = function () {
     return new Promise(function (resolve) {
       //prepare mediasource
       player.ms = new MediaSource();
       video.src = URL.createObjectURL(player.ms);
       player.ms.onsourceopen = function () {
+        for (var i in player.msoninit) {
+          player.msoninit[i]();
+        }
+        player.msoninit = [];
+
         resolve();
       };
       player.ms.onsourceclose = function (e) {
@@ -185,9 +191,9 @@ p.prototype.build = function (AwmVideo, callback) {
   this.msinit().then(function () {
     if (player.sb) {
       AwmVideo.log('Not creating source buffer as one already exists.');
+      checkReady();
       return;
     }
-    checkReady();
   });
   this.onsbinit = [];
   this.sbinit = function (codecs) {
@@ -380,7 +386,7 @@ p.prototype.build = function (AwmVideo, callback) {
     if (player.onsbinit.length) {
       player.onsbinit.shift()();
     }
-    //console.log("sb inited");
+    checkReady();
   };
 
   this.currentTracks = [];
@@ -414,7 +420,7 @@ p.prototype.build = function (AwmVideo, callback) {
       this.ws.onclose = function () {
         AwmVideo.log('MP4 over WS: websocket closed');
 
-        if (this.wasConnected && (!AwmVideo.destroyed) && (AwmVideo.state == 'Stream is online')) {
+        if (this.wasConnected && (!AwmVideo.destroyed) && (AwmVideo.state == 'Stream is online') && (!(AwmVideo.video && AwmVideo.video.error))) {
           AwmVideo.log('MP4 over WS: reopening websocket');
           player.wsconnect().then(function () {
             if (!player.sb) {
@@ -840,10 +846,15 @@ p.prototype.build = function (AwmVideo, callback) {
     //retrieve codec info
     var f = function (msg) {
       //got codec data, set up source buffer
+      if (player.ms && player.ms.readyState == "open") {
+        player.sbinit(msg.data.codecs);
+      }
+      else {
+        player.msoninit.push(function(){
+          player.sbinit(msg.data.codecs);
+        });
+      }
 
-      player.sbinit(msg.data.codecs);
-
-      checkReady();
       player.ws.removeListener('codec_data', f);
     };
     this.ws.addListener('codec_data', f);
