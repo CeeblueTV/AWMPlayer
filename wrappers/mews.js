@@ -991,15 +991,11 @@ p.prototype.build = function (AwmVideo, callback) {
             player.ws.removeListener('on_time', f);
           } else if (e.data.current > video.currentTime) {
             player.sb.paused = false;
-            video.play().then(resolve).catch(function(){
-              if (video.buffered.length && video.buffered.start(0) > video.currentTime) {
-                video.currentTime = video.buffered.start(0);
-                video.play().then(resolve).catch(reject);
-              }
-              else {
-                reject.apply(this,arguments);
-              }
-            });
+            if (video.buffered.length && video.buffered.start(0) > video.currentTime) {
+              video.currentTime = video.buffered.start(0);
+            }
+            video.play().then(resolve).catch(reject);
+
             player.ws.removeListener('on_time', f);
           }
         };
