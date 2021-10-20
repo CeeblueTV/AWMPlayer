@@ -372,7 +372,7 @@ AwmSkins['default'] = {
       //improve autoplay behaviour
       if (AwmVideo.options.autoplay) {
         //because Awm doesn't send data instantly (but real time), it can take a little while before canplaythrough is fired. Rather than wait, we can just start playing at the canplay event
-        AwmUtil.event.addListener(AwmVideo.video, 'canplay', function () {
+        var canplay = AwmUtil.event.addListener(AwmVideo.video, 'canplay', function () {
           if (AwmVideo.player.api && AwmVideo.player.api.paused) {
             var promise = AwmVideo.player.api.play();
             if (promise) {
@@ -395,39 +395,7 @@ AwmSkins['default'] = {
                       if (AwmVideo.reporting) {
                         AwmVideo.reporting.stats.d.autoplay = 'success';
                       }
-                    })
-                      .catch(function () {
-                        if (AwmVideo.destroyed) {
-                          return;
-                        }
-                        AwmVideo.log('Autoplay failed even with muted video. Unmuting and showing play button.');
-                        if (AwmVideo.reporting) {
-                          AwmVideo.reporting.stats.d.autoplay = 'failed';
-                        }
-                        AwmVideo.player.api.muted = false;
-
-                        //play has failed
-
-                        //show large centered play button
-                        var largePlayButton = AwmVideo.skin.icons.build('largeplay', 150);
-                        AwmUtil.class.add(largePlayButton, 'awmvideo-pointer');
-                        AwmVideo.container.appendChild(largePlayButton);
-
-                        //start playing on click
-                        AwmUtil.event.addListener(largePlayButton, 'click', function () {
-                          if (AwmVideo.player.api.paused) {
-                            AwmVideo.player.api.play();
-                          }
-                        });
-
-                        //remove large button on play
-                        var f = function () {
-                          AwmVideo.container.removeChild(largePlayButton);
-                          AwmVideo.video.removeEventListener('play', f);
-                        };
-                        AwmUtil.event.addListener(AwmVideo.video, 'play', f);
-
-                      }).then(function () {
+                    }).then(function () {
                       if (AwmVideo.destroyed) {
                         return;
                       }
@@ -479,7 +447,44 @@ AwmSkins['default'] = {
                       };
                       AwmUtil.event.addListener(AwmVideo.video, 'volumechange', fu);
 
-                    }, function () {
+                    }).catch(function(){
+                      if (AwmVideo.destroyed) { return; }
+                      AwmVideo.log('Autoplay failed even with muted video. Unmuting and showing play button.');
+                      //wait 5 seconds and then pause the download
+                      AwmVideo.timers.start(function(){
+                        if (AwmVideo.player.api.paused) {
+                          //don't question it
+                          //if the video is paused, also request the player api to pause
+                          //for example, for mews, this would pause the download
+                          AwmVideo.player.api.pause();
+                          if (AwmVideo.monitor) { AwmVideo.monitor.destroy(); }
+                        }
+                      },5e3);
+
+                      if (AwmVideo.reporting) { AwmVideo.reporting.stats.d.autoplay = 'failed'; }
+                      AwmVideo.player.api.muted = false;
+
+                      //play has failed
+
+                      //show large centered play button
+                      var largePlayButton = AwmVideo.skin.icons.build('largeplay',150);
+                      AwmUtil.class.add(largePlayButton,'awmvideo-pointer');
+                      AwmVideo.container.appendChild(largePlayButton);
+
+                      //start playing on click
+                      AwmUtil.event.addListener(largePlayButton,'click',function(){
+                        if (AwmVideo.player.api.paused) {
+                          AwmVideo.player.api.play();
+                        }
+                      });
+
+                      //remove large button on play
+                      var f = function (){
+                        AwmVideo.container.removeChild(largePlayButton);
+                        AwmVideo.video.removeEventListener('play',f);
+                      };
+                      AwmUtil.event.addListener(AwmVideo.video,'play',f);
+
                     });
                   }
                 } else if (AwmVideo.reporting) {
@@ -490,6 +495,8 @@ AwmSkins['default'] = {
           } else if (AwmVideo.reporting) {
             AwmVideo.reporting.stats.d.autoplay = 'success';
           }
+
+          AwmUtil.event.removeListener(canplay); //only fire once
         });
       }
 

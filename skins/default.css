@@ -134,7 +134,7 @@ svg.icon.timeout {
     margin: 0.5em;
     padding: 0.5em;
 }
-.mistvideo-currentTime {
+.awmvideo-currentTime {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

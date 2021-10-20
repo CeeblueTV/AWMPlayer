@@ -11,6 +11,10 @@
 ## Bug fixes
 - Metric/Reporting module fix
 - Minor player fixes. Disabled embedded abr
+- Update logic when video does not start at timestamp 0 (MP4oWS)
+- Reopen WS if playback attempted (MP4oWS)
+- Add error handling if autoplay disabled (MP4oWS)
+- Fix startup when tabbed out (MP4oWS)
  
 # 1.0.2 (2021-09-29)
 
