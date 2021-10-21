@@ -1615,75 +1615,6 @@ AwmSkins['default'] = {
           tr.title = 'The current ' + type + ' track';
           table.appendChild(tr);
           var cell;
-          if ('decodingIssues' in AwmVideo.skin.blueprints) { //this is dev mode
-            cell = document.createElement('td');
-            tr.appendChild(cell);
-            if (type != 'subtitle') {
-              var checkbox = document.createElement('input');
-              checkbox.setAttribute('type', 'checkbox');
-              checkbox.setAttribute('checked', '');
-              checkbox.setAttribute('title', 'Whether or not to play ' + type);
-              checkbox.trackType = type;
-              cell.appendChild(checkbox);
-              checkboxes[type] = checkbox;
-
-              if (AwmVideo.options.setTracks && (AwmVideo.options.setTracks[type])) {
-                if (AwmVideo.options.setTracks[type] == 'none') {
-                  checkbox.checked = false;
-                } else {
-                  checkbox.checked = true;
-                }
-              }
-
-              AwmUtil.event.addListener(checkbox, 'change', function () {
-                //make sure at least one checkbox is checked
-                var n = 0;
-                for (var i in checkboxes) {
-                  if (checkboxes[i].checked) {
-                    n++;
-                  }
-                }
-                if (n == 0) {
-                  for (var i in checkboxes) {
-                    if (i == this.trackType) {
-                      continue;
-                    }
-                    if (!checkboxes[i].checked) {
-                      checkboxes[i].checked = true;
-                      changeToTracks(i, true);
-                      break;
-                    }
-                  }
-                }
-
-                var value = 'none';
-                if (this.checked) {
-                  if (this.trackType in selections) {
-                    value = selections[this.trackType].value;
-                  } else {
-                    value = 'auto';
-                  }
-                } else {
-                  value = 'none';
-                }
-                changeToTracks(this.trackType, (this.checked ? value : 'none'));
-              });
-
-              AwmUtil.event.addListener(AwmVideo.video, 'playerUpdate_trackChanged', function (e) {
-
-                if (e.message.type != type) {
-                  return;
-                }
-
-                if (e.message.value == 'none') {
-                  this.checked = false;
-                } else {
-                  this.checked = true;
-                }
-
-              }, select);
-            }
-          }
 
           var header = document.createElement('td');
           tr.appendChild(header);
@@ -1834,6 +1765,76 @@ AwmSkins['default'] = {
               }
               */
 
+            }
+
+            if ('decodingIssues' in AwmVideo.skin.blueprints) { //this is dev mode
+              cell = document.createElement('td');
+              tr.appendChild(cell);
+              if (type != 'subtitle') {
+                var checkbox = document.createElement('input');
+                checkbox.setAttribute('type', 'checkbox');
+                checkbox.setAttribute('checked', '');
+                checkbox.setAttribute('title', 'Whether or not to play ' + type);
+                checkbox.trackType = type;
+                cell.appendChild(checkbox);
+                checkboxes[type] = checkbox;
+
+                if (AwmVideo.options.setTracks && (AwmVideo.options.setTracks[type])) {
+                  if (AwmVideo.options.setTracks[type] == 'none') {
+                    checkbox.checked = false;
+                  } else {
+                    checkbox.checked = true;
+                  }
+                }
+
+                AwmUtil.event.addListener(checkbox, 'change', function () {
+                  //make sure at least one checkbox is checked
+                  var n = 0;
+                  for (var i in checkboxes) {
+                    if (checkboxes[i].checked) {
+                      n++;
+                    }
+                  }
+                  if (n == 0) {
+                    for (var i in checkboxes) {
+                      if (i == this.trackType) {
+                        continue;
+                      }
+                      if (!checkboxes[i].checked) {
+                        checkboxes[i].checked = true;
+                        changeToTracks(i, true);
+                        break;
+                      }
+                    }
+                  }
+
+                  var value = 'none';
+                  if (this.checked) {
+                    if (this.trackType in selections) {
+                      value = selections[this.trackType].value;
+                    } else {
+                      value = 'auto';
+                    }
+                  } else {
+                    value = 'none';
+                  }
+                  changeToTracks(this.trackType, (this.checked ? value : 'none'));
+                });
+
+                AwmUtil.event.addListener(AwmVideo.video, 'playerUpdate_trackChanged', function (e) {
+
+                  if (e.message.type != type) {
+                    return;
+                  }
+
+                  if (e.message.value == 'none') {
+                    this.checked = false;
+                  } else {
+                    this.checked = true;
+                  }
+
+                }, select);
+              }
             }
           } else {
             //show as text
