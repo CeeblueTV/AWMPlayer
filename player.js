@@ -3,7 +3,7 @@ var awmplayers = {}; /*TODO move this*/
 function AwmPlayer() {
 }
 
-export function awmPlay(streamName, options) {
+function awmPlay(streamName, options) {
   return new AwmVideo(streamName, options);
 }
 
