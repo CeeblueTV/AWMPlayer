@@ -1234,6 +1234,9 @@ function AwmVideo(streamName, options) {
           switch (data.error) {
             case 'Stream is offline':
               AwmVideo.info = false;
+
+              AwmUtil.event.send('streamOffline', null, AwmVideo.video);
+
               if (AwmVideo.player && AwmVideo.player.api && AwmVideo.player.api.currentTime) {
                 AwmVideo.resumeTime = AwmVideo.player.api.currentTime;
               }
