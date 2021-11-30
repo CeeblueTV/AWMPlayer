@@ -77,6 +77,9 @@
     tracksList = event.message.meta.tracks;
     console.log('Event: StreamInfo (', JSON.stringify(event.message), ')');
   });
+  awmElement.addEventListener('streamOffline', function (event) {
+    console.log('Stream Offline');
+  });
 
   let options = {
     //The host from which the stream will be received
