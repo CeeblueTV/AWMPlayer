@@ -18,6 +18,13 @@ export interface AWMPlayerOptions {
     host?: string | false;
 
     /**
+     * Should contain a private stream access token.
+     *
+     * @default false
+     */
+    accessToken?: string | false;
+
+    /**
      * Whether playback should start automatically. If the browser refuses autoplay, the player will attempt to autoplay
      * with its sound muted.
      *
