@@ -1,3 +1,9 @@
+# 1.0.6  (2022-07-29)
+
+---
+## New Features
+- Added access token, for private streams playback
+
 # 1.0.5 (2021-10-13)
 
 ---

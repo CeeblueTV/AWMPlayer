@@ -34,6 +34,7 @@ function AwmVideo(streamName, options) {
     monitor: false,               // No custom monitoring
     reloadDelay: false,           // Don't override default reload delay
     urlappend: false,             // Don't add this to urls
+    accessToken: false,           // Private streams playback token
     setTracks: false,             // Don't set tracks
     fillSpace: false,             // Don't fill parent container
     width: false,                 // No set width
@@ -312,6 +313,9 @@ function AwmVideo(streamName, options) {
     AwmVideo.playerName = result.player;
     source = AwmUtil.object.extend({}, source);
     source.index = result.source_index;
+    if (this.options.accessToken) {
+      source.url = AwmUtil.http.url.addParam(source.url, {id: this.options.accessToken});
+    }
     source.url = AwmVideo.urlappend(source.url);
     AwmVideo.source = source;
 
