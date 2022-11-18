@@ -41,8 +41,9 @@ function AwmVideo(streamName, options) {
     height: false,                // No set height
     maxwidth: false,              // No max width (apart from targets dimensions)
     maxheight: false,             // No max height (apart from targets dimensions)
-    ABR_resize: false,            //for supporting wrappers: when the player resizes, request a video track that matches the resolution best
-    ABR_bitrate: false,           //for supporting wrappers: when there are playback issues, request a lower bitrate video track
+    ABR_resize: false,            // for supporting wrappers: when the player resizes, request a video track that matches the resolution best
+    ABR_bitrate: false,           // for supporting wrappers: when there are playback issues, request a lower bitrate video track
+    subscribeToMetaTrack: false,  // pass [[track index,callback]]; the callback function will be called whenever the specified meta data track receives a message.
     AwmVideoObject: false,        // No reference object is passed
     metrics: false,               // No metrics module passed. Will Use default metric module
     reporting: false              // For supporting new metrics module. (!!! Don't activate since module is not ready)
@@ -562,6 +563,237 @@ function AwmVideo(streamName, options) {
                 AwmVideo.monitor.reset();
               }
             });
+          }
+
+          if ("currentTime" in AwmVideo.player.api) {
+            var json_source = AwmUtil.sources.find(AwmVideo.info.source,{
+              type: "html5/text/javascript",
+              protocol: "wss:"
+            });
+            if (json_source) {
+              AwmVideo.metaTrackSubscriptions = {
+                subscriptions: {},
+                socket: null,
+                listeners: {},
+                init: function(){
+                  var me = this;
+                  var params = {rate:1};
+                  if (options.accessToken) {
+                    params.id = options.accessToken;
+                  }
+                  this.socket = new WebSocket(AwmUtil.http.url.addParam(AwmVideo.urlappend(json_source.url),params));
+                  me.send_queue = [];
+                  me.checktimer = null;
+                  me.s = function(obj){
+                    if (me.socket.readyState == me.socket.OPEN) {
+                      me.socket.send(JSON.stringify(obj));
+                      return true;
+                    }
+                    if (me.socket.readyState >= me.socket.CLOSING) {
+                      //reopen websocket
+                      me.init();
+                    }
+                    //add message to queue
+                    this.send_queue.push(obj);
+                  };
+
+                  var stayahead = 5; //ask AwmServer to fastforward to stayahead seconds ahead, so we receive messages earlier
+
+                  me.socket.setTracks = function(){
+                    me.s({type:"tracks",meta:AwmUtil.object.keys(me.subscriptions).join(",")});
+                  };
+                  me.socket.onopen = function(){
+                    AwmVideo.log("Metadata socket opened");
+
+                    me.socket.setTracks();
+                    me.s({type:"set_speed",play_rate:AwmVideo.player.api.playbackRate});
+                    me.s({type:"seek",seek_time:Math.round(AwmVideo.player.api.currentTime*1e3),ff_to:Math.round((AwmVideo.player.api.currentTime+stayahead)*1e3)});
+                    me.socket.addEventListener("message",function(e){
+                      if (!e.data) { AwmVideo.log("Subtitle websocket received empty message."); return; }
+                      var message = JSON.parse(e.data);
+                      if (!message) { AwmVideo.log("Subtitle websocket received invalid message."); return; }
+
+                      if (("time" in message) && ("track" in message) && ("data" in message)) {
+                        if (message.track in me.subscriptions) {
+                          //console.warn("received:",message.track,message.data);
+                          me.subscriptions[message.track].buffer.push(message);
+                          //console.warn("received:",message.track,message.time,"currentTime:",AwmVideo.player.api.currentTime,"bufferlength:",me.subscriptions[message.track].buffer.length,"timer:",!!me.checktimer);
+
+                          if (!me.checktimer) {
+                            me.check();
+                            //console.warn("checking because new message");
+                          }
+                        }
+                      }
+                      //per track, the messages should arrive in the correct order and we shouldn't need to do sorting
+
+
+                      /*if ("time" in message) { //TODO remove
+                        var bufferlength = message.time*1e-3 - AwmVideo.player.api.currentTime;
+                        console.warn("buffer length",bufferlength);
+                      }*/
+
+                      if ("type" in message) {
+                        switch (message.type) {
+                          case "seek": {
+                            for (var i in me.subscriptions) {
+                              me.subscriptions[i].buffer = [];
+                            }
+                            AwmVideo.log("Cleared metadata buffer after completed seek");
+                            if (me.checktimer) {
+                              //there might be a timer going for some time in the future: stop it,
+                              AwmVideo.timers.stop(me.checktimer);
+                              me.checktimer = null;
+                            }
+                          }
+                        }
+                      }
+
+                    });
+                    me.socket.onclose = function(){
+                      //dont me.init();, send function will reopen if needed instead
+                      AwmVideo.log("Metadata socket closed");
+                    }
+
+                    while (me.send_queue.length && (me.socket.readyState == me.socket.OPEN)) {
+                      me.s(me.send_queue.shift());
+                    }
+                  };
+                  if (!("seeked" in this.listeners)) { //prevent duplication
+                    var lastff = 0;
+
+                    me.check = function(){
+                      //console.warn(me.checktimer,"check");
+                      if (me.checktimer) {
+                        AwmVideo.timers.stop(me.checktimer);
+                        me.checktimer = null;
+                      }
+
+                      if (AwmVideo.player.api.paused) { return; }
+
+                      var nextAtGlobal = null;
+                      for (var i in me.subscriptions) {
+                        var buffer = me.subscriptions[i].buffer;
+                        while (buffer.length && (buffer[0].time <= AwmVideo.player.api.currentTime*1e3)) {
+                          var message = buffer.shift();
+                          if (message.time < (AwmVideo.player.api.currentTime - 5) * 1e3) {
+                            //the message is at least 5 seconds older than the video time
+                            continue;
+                          }
+                          else {
+                            for (var j in me.subscriptions[i].callbacks) {
+                              me.subscriptions[i].callbacks[j].call(AwmVideo,message);
+                            }
+                          }
+                        }
+                        if (buffer.length) {
+                          //save when the next message should be played
+                          nextAtGlobal = Math.min(nextAtGlobal === null ? 1e9 : nextAtGlobal,buffer[0].time);
+                        }
+                      }
+
+                      //add rate limiting: do not ask for fast forward more than once a second
+                      var now = (new Date()).getTime()
+                      if (now > lastff+1e3) {
+                        me.s({type:"fast_forward",ff_to:Math.round((AwmVideo.player.api.currentTime+stayahead)*1e3)});
+                        lastff = now;
+                      }
+
+                      if (nextAtGlobal) {
+                        me.checktimer = AwmVideo.timers.start(function(){
+                          //console.warn("checking because timer");
+                          me.check();
+                        },nextAtGlobal-AwmVideo.player.api.currentTime*1e3);
+                        //console.warn(me.checktimer,"will check in",nextAtGlobal-AwmVideo.player.api.currentTime*1e3);
+
+                        /*if (nextAtGlobal-AwmVideo.player.api.currentTime*1e3 > 2000) {
+                          console.warn(AwmVideo.player.api.currentTime*1e3,me.subscriptions[0].buffer.map(function(a){ return a.time; }));
+                        }*/
+                        //console.warn(nextAtGlobal-AwmVideo.player.api.currentTime*1e3,me.subscriptions[0].buffer.length);
+                      }
+                      /*else {
+                        console.warn(me.checktimer,"not checking");
+                        if (me.subscriptions[0].buffer.length) console.warn("no nextAtGlobal",me.subscriptions[0].buffer.length,AwmVideo.player.api.currentTime*1e3,me.subscriptions[0].buffer.map(function(a){ return a.time; }));
+                      }*/
+
+                    };
+
+                    this.listeners.seeked = AwmUtil.event.addListener(AwmVideo.video,"seeked",function(){
+                      for (var i in me.subscriptions) {
+                        me.subscriptions[i].buffer = [];
+                      }
+                      me.s({type:"seek",seek_time:Math.round(AwmVideo.player.api.currentTime*1e3),ff_to:Math.round((AwmVideo.player.api.currentTime+stayahead)*1e3)});
+                      //console.warn("seek to",Math.round(AwmVideo.player.api.currentTime*1e3));
+                    });
+                    this.listeners.pause = AwmUtil.event.addListener(AwmVideo.video,"pause",function(){
+                      me.s({type:"hold"});
+                      AwmVideo.timers.stop(me.checktimer);
+                      me.checktimer = null;
+                    });
+                    this.listeners.playing = AwmUtil.event.addListener(AwmVideo.video,"playing",function(){
+                      me.s({type:"play"});
+                      if (!me.checktimer) me.check();
+                    });
+                    this.listeners.ratechange = AwmUtil.event.addListener(AwmVideo.video,"ratechange",function(){
+                      me.s({type:"set_speed",play_rate:AwmVideo.player.api.playbackRate});
+                    });
+                  }
+                },
+                destroy: function(){
+                  AwmVideo.log("Closing metadata socket..");
+                  this.socket.close();
+                  this.socket = null;
+                  this.subscriptions = {};
+                  for (var i in this.listeners) {
+                    AwmUtil.event.removeListener(this.listeners[i]);
+                  }
+                  this.listeners = {};
+                },
+                add: function (trackid,callback) {
+                  if (!(trackid in this.subscriptions)) {
+                    this.subscriptions[trackid] = {
+                      buffer: [],
+                      callbacks: []
+                    };
+                  }
+                  this.subscriptions[trackid].callbacks.push(callback);
+
+                  if (this.socket === null) {
+                    this.init();
+                  }
+                  else {
+                    this.socket.setTracks();
+                  }
+                },
+                remove: function(trackid,callback){
+                  if (trackid in this.subscriptions) {
+                    for (var i in this.subscriptions[trackid].callbacks) {
+                      if (callback == this.subscriptions[trackid].callbacks[i]) {
+                        this.subscriptions[trackid].callbacks.splice(i,1);
+                        break;
+                      }
+                    }
+                    if (this.subscriptions[trackid].callbacks.length == 0) {
+                      delete this.subscriptions[trackid];
+                      if (AwmUtil.object.keys(this.subscriptions).length) {
+                        this.socket.setTracks();
+                      }
+                      else {
+                        this.destroy();
+                      }
+                    }
+                  }
+                }
+              };
+              if (options.subscribeToMetaTrack.length) {
+                if (typeof options.subscribeToMetaTrack[0] != "object") {
+                  options.subscribeToMetaTrack = [options.subscribeToMetaTrack];
+                }
+                for (var i in options.subscribeToMetaTrack) {
+                  AwmVideo.metaTrackSubscriptions.add.apply(AwmVideo.metaTrackSubscriptions,options.subscribeToMetaTrack[i]);
+                }
+              }
+            }
           }
 
         }
@@ -1442,6 +1674,9 @@ function AwmVideo(streamName, options) {
           AwmVideo.log('Error while unloading player: ' + e.message);
         }
       }
+    }
+    if (this.metaTrackSubscriptions && this.metaTrackSubscriptions.socket) {
+      this.metaTrackSubscriptions.destroy();
     }
     if ((this.UI) && (this.UI.elements)) {
       for (var i in this.UI.elements) {

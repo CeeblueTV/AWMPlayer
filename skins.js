@@ -1582,6 +1582,11 @@ AwmSkins['default'] = {
           const type = tracktypes[j];
           var t = tracks[type];
 
+          if (AwmUtil.array.indexOf(["video","audio","subtitle"],type) <= -1) {
+            //Do not display this track type
+            continue;
+          }
+
           if (type == 'subtitle') {
             if ((!('player' in AwmVideo)) || (!('api' in AwmVideo.player)) || (!('setSubtitle' in AwmVideo.player.api))) {
               //this player does not support adding subtitles, don't show track selection in the interface
