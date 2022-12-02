@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>AWM-player metadata example</title>
+    <meta charset="utf-8">
+    <meta content="13.08.2021~1" name="version">
+    <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport">
+    <style>
+        html {
+            margin: 0;
+            padding: 0;
+            display: table;
+            width: 100%;
+            height: 100%;
+        }
+
+        body {
+            color: white;
+            background: #0f0f0f;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-flow: column nowrap;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        #container {
+            position: relative;
+        }
+
+        .metadata {
+            font-family: monospace;
+            font-size: 15px;
+            left: 3px;
+            position: relative;
+            display: block;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+<div>
+    <span id="protocol-caption" style="color: #DDDDDD"></span>
+    <span id="resolution-caption" style="color: #DDDDDD"></span>
+</div>
+<div id="container">
+    <span class="metadata" id="metadata" style="color: #DDDDDD"></span>
+    <canvas id="screenshot"></canvas>
+
+    <div class="awmvideo" id="adaptive-video-player"></div>
+</div>
+
+<script src="../dist/player.js"></script>
+<script>
+
+  AwmSkins.default.css.skin = '../dist/skins/default.css';
+  AwmSkins.dev.css.skin = '../dist/skins/dev.css';
+
+  const protocolCaptionElement = document.getElementById('protocol-caption');
+  const resolutionCaptionElement = document.getElementById('resolution-caption');
+  const metadataElement = document.getElementById('metadata');
+  const screenshotElement = document.getElementById('screenshot');
+  const ctx = screenshotElement.getContext('2d');
+  const awmElement = document.getElementById('adaptive-video-player');
+
+  const PROTOCOL_LABELS = {
+    'webrtc': 'WebRTC',
+    'ws/video/mp4': 'MP4ovWS',
+    'html5/video/mp4': 'MP4',
+    'html5/application/vnd.apple.mpegurl': 'HLS'
+  };
+
+  const PROTOCOL_CHANGE_EVENT = 'protocol_name';
+  let tracksList = {};
+
+  // Event that fires when protocol changed. Return new protocol name
+  awmElement.addEventListener(PROTOCOL_CHANGE_EVENT, function (event) {
+    protocolCaptionElement.innerText = PROTOCOL_LABELS[event.message];
+  });
+  awmElement.addEventListener('playerUpdate_trackChanged', ({ message }) => {
+    if (message.type === 'audio') {
+      return;
+    }
+
+    const track = Object.values(tracksList).filter(e => e.idx === +message.trackid)[0];
+    if (track) {
+      resolutionCaptionElement.innerText = `${track.width}x${track.height}`;
+    }
+  });
+  // Logging setup (optional). Event that fires when something were logged
+  awmElement.addEventListener('log', function (log) {
+    console.log('>', log.message);
+  });
+  // Event that fires when got info from stream
+  awmElement.addEventListener('haveStreamInfo', function (event) {
+    tracksList = event.message.meta.tracks;
+    console.log('Event: StreamInfo (', JSON.stringify(event.message), ')');
+  });
+  awmElement.addEventListener('streamOffline', function (event) {
+    console.log('Stream Offline');
+  });
+
+  let options = {
+    //The host from which the stream will be received
+    host: 'https://fly.live.ceeblue.tv:4433/',
+    // Target element in which player would be placed
+    target: awmElement,
+    // Enable autoplay
+    autoplay: true,
+    // Skin: 'dev',  <- add this to enable debugging mode
+    AwmVideoObject: {},
+    // Protocols and it's priority
+    forcePriority: {
+      source: [
+        ['type', ['webrtc']],
+      ]
+    },
+    forceTrack: true,
+    // Observe stream and change quality/protocol if needed.
+    monitor: {
+      // Here you can add fields to override them in monitor (default AdjustableMonitor monitor). If any function would be here it just replace AdjustableMonitor;
+      PROTOCOL_CHANGE_EVENT, // Override event's name that shoots when protocol initialized or changed
+    },
+    subscribeToMetaTrack: [
+      [
+        0,
+        function (meta) {
+          // console.log(meta);
+          console.log("Sync diff: ", this.player.api.currentTime * 1000 - meta.time);
+
+          try{
+            screenshot.width = this.video.clientWidth;
+            screenshot.height = 20;
+            ctx.drawImage(this.video, 0, 0);
+          }catch(e){console.error(e);}
+
+          if (meta.data && meta.data.winfinity) {
+            var winfinityJson = meta.data.winfinity.replace(/(\w+:)|(\w+ :)/g, function(str) {
+              return '"' + str.substring(0, str.length - 1) + '":';
+            });
+            var winfinityObj = JSON.parse(winfinityJson);
+
+            var browserTimestamp = new Date();
+            var winfinityTimecode = new Date(winfinityObj.timecode);
+            // var metadataTimestamp = new Date(meta.time);
+
+            var browserTimestampStr = browserTimestamp.toISOString().replace(/Z|T/g, " ").replace(/-/g, ":");
+            var winfinityTimecodeStr = winfinityTimecode.toISOString().replace(/Z|T/g, " ").replace(/-/g, ":");
+            // var metadataTimestampStr = metadataTimestamp.toISOString().replace(/Z|T/g, " ").replace(/-/g, ":");
+
+            metadataElement.innerHTML = `<br/>${winfinityTimecodeStr}(TIMECODE)<br/>${browserTimestampStr}&nbsp(BROWSER)<br/>`;
+          }
+        }
+      ]
+    ]
+  };
+
+  // Name of stream that would be played
+  const streamName = 'as+3d6e90e2-8877-45d0-995c-2be437f6268e';
+  options.accessToken = '9b23465e-8f01-40ba-bef6-2bb338c05c01';
+  awmPlay(streamName, options);
+</script>
+</body>
+</html>

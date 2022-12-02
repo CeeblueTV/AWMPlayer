@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>AWM-player example</title>
+  <meta charset="utf-8">
+  <meta content="13.08.2021~1" name="version">
+  <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport">
+
+<!--  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css"-->
+<!--        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">-->
+  <style>
+    html {
+      margin: 0;
+      padding: 0;
+      display: table;
+      width: 100%;
+      height: 100%;
+    }
+
+    body {
+      color: white;
+      background: #0f0f0f;
+      margin: 0;
+      padding: 0;
+      display: table-cell;
+      vertical-align: middle;
+      text-align: center
+    }
+
+    body > div > div {
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+<span id="protocol-caption" style="color: #DDDDDD"></span>
+<span id="resolution-caption" style="color: #DDDDDD"></span>
+<div class="awmvideo" id="adaptive-video-player"></div>
+
+<div id="protocolSelectionModal" class="modal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Protocol</h5>
+      </div>
+      <div class="modal-body">
+        <button onclick="onProtocolSelect('auto')" class="btn btn-primary btn-lg btn-block mb-3" type="submit">AUTO</button>
+        <button onclick="onProtocolSelect('WebRTC')" class="btn btn-primary btn-block" type="submit">WebRTC</button>
+        <button onclick="onProtocolSelect('MP4ovWS')" class="btn btn-primary btn-block" type="submit">MP4ovWS</button>
+        <button onclick="onProtocolSelect('HLS')" class="btn btn-primary btn-block" type="submit">HLS</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../dist/player.js"></script>
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+<script>
+
+  AwmSkins.default.css.skin = '../dist/skins/default.css';
+  AwmSkins.dev.css.skin = '../dist/skins/dev.css';
+
+  const protocolCaptionElement = document.getElementById('protocol-caption');
+  const resolutionCaptionElement = document.getElementById('resolution-caption');
+  const awmElement = document.getElementById('adaptive-video-player');
+
+  const PROTOCOL_LABELS = {
+    'webrtc': 'WebRTC',
+    'ws/video/mp4': 'MP4ovWS',
+    'html5/video/mp4': 'MP4',
+    'html5/application/vnd.apple.mpegurl': 'HLS'
+  };
+
+  const PROTOCOL_CHANGE_EVENT = 'protocol_name';
+  let tracksList = {};
+
+  // Event that fires when protocol changed. Return new protocol name
+  awmElement.addEventListener(PROTOCOL_CHANGE_EVENT, function (event) {
+    protocolCaptionElement.innerText = PROTOCOL_LABELS[event.message];
+  });
+  awmElement.addEventListener('playerUpdate_trackChanged', ({message}) => {
+    if (message.type === 'audio') {
+      return;
+    }
+
+    const track = Object.values(tracksList).filter(e => e.idx === +message.trackid)[0];
+    if (track) {
+      resolutionCaptionElement.innerText = `${track.width}x${track.height}`;
+    }
+  });
+  // Logging setup (optional). Event that fires when something were logged
+  awmElement.addEventListener('log', function (log) {
+    console.log('>', log.message);
+  });
+  // Event that fires when got info from stream
+  awmElement.addEventListener('haveStreamInfo', function (event) {
+    tracksList = event.message.meta.tracks;
+    console.log('Event: StreamInfo (', JSON.stringify(event.message), ')');
+  });
+  awmElement.addEventListener('streamOffline', function (event) {
+    console.log('Stream Offline');
+  });
+
+  function play() {
+    let options = {
+      //The host from which the stream will be received
+      host: 'https://cos.ceeblue.tv:4433/',
+      // Target element in which player would be placed
+      target: awmElement,
+      // Enable autoplay
+      autoplay: true,
+      // Skin: 'dev',  <- add this to enable debugging mode
+      AwmVideoObject: {},
+      // Protocols and it's priority
+      forcePriority: {
+        source: [
+          ['type', ['webrtc', 'ws/video/mp4', 'html5/video/mp4', 'html5/application/vnd.apple.mpegurl']],
+        ]
+      },
+      forceTrack: true,
+      // Observe stream and change quality/protocol if needed.
+      monitor: {
+        // Here you can add fields to override them in monitor (default AdjustableMonitor monitor). If any function would be here it just replace AdjustableMonitor;
+        PROTOCOL_CHANGE_EVENT, // Override event's name that shoots when protocol initialized or changed
+      },
+      // Send player metrics to server if setup. Pass object or true to enable monitoring
+      metrics: {
+        METRICS_URL: 'ws://localhost:8080/'  // Override url for sending statistic
+      }
+    };
+
+    //Name of stream that would be played
+    const streamName = 'out+219e8dc8-705a-44cd-9bc7-361f513a1f78';
+    awmPlay(streamName, options);
+  }
+
+
+  const protocolSelectorModal = $('#protocolSelectionModal');
+
+  function onProtocolSelect(type) {
+    console.log(`onProtocolSelect => ${type}`)
+    const streamName = 'out+219e8dc8-705a-44cd-9bc7-361f513a1f78';
+    // awmPlay(streamName, options);
+
+    protocolSelectorModal.modal('hide');
+    play();
+  }
+
+  protocolSelectorModal.modal('show');
+
+  // setTimeout(() => {
+  //   play();
+  // }, 2000);
+</script>
+</body>
+</html>

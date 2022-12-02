@@ -1,0 +1,81 @@
+
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <title>MistServer Meta-player</title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+<!--    <script src="https://thulmk4/mist/player.js"></script>-->
+<!--    <script src="player.js"></script>-->
+    <script src="https://fly.live.ceeblue.tv:4433/player.js"></script>
+</head>
+<body>
+
+<style>
+    body {
+        background-color: #222;
+        display: flex;
+        flex-flow: column nowrap;
+        justify-content: center;
+        align-items: center;
+        margin: 0;
+        min-height: 100vh;
+    }
+    #container {
+        position: relative;
+    }
+    #message {
+	font-family: monospace;
+        font-size: 15px;
+        left:3px;
+        position:relative;
+        display:block;
+	color: #fff;
+    }
+</style>
+<script>
+    const div = document.createElement("div");
+    div.setAttribute("id", "container");
+    div.innerHTML = '<span id="message"></span><canvas id="screenshot"></canvas><div id="player"></div>';
+    document.body.appendChild(div);
+    var player = document.getElementById("player");
+    var message = document.getElementById("message");
+    var screenshot = document.getElementById("screenshot");
+    var ctx = screenshot.getContext('2d');
+
+    mistPlay("as+3d6e90e2-8877-45d0-995c-2be437f6268e",{
+        target: player,
+        skin: "dev",
+        urlappend: "",
+        forcePriority: {
+            source: [
+                ['type', ['webrtc']],
+            ]
+        },
+        urlapped: "?id=04b52b50-4c6f-4b6e-8e85-c0c097e3d476",
+        subscribeToMetaTrack: [
+	    [0,function(meta){
+		var time = meta.time;
+                if (!meta.data.winfinity){return;}
+                console.log("Sync diff: ", this.player.api.currentTime*1000 - meta.time);
+                try{
+                  screenshot.width = this.video.clientWidth;
+                  screenshot.height = 20;
+                  ctx.drawImage(this.video, 0, 0);
+                }catch(e){console.error(e);}
+		var winfinityJson = meta.data.winfinity.replace(/(\w+:)|(\w+ :)/g, function(str) {
+		    return '"' + str.substring(0, str.length - 1) + '":';
+		});
+		var winfinityObj = JSON.parse(winfinityJson);
+		var now = new Date();
+		var date = new Date(winfinityObj.timecode);
+		var browserTime = now.toISOString().replace(/Z|T/g, " ").replace(/-/g, ":");
+		var timecode = date.toISOString().replace(/Z|T/g, " ").replace(/-/g, ":");
+		    message.innerHTML = `${timecode}`;
+	    }]
+        ]
+    });
+
+</script>
+</body>
+</html>
