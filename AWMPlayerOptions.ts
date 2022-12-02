@@ -205,6 +205,20 @@ export interface AWMPlayerOptions {
               source: (string | ((a: any) => number) | (string | string[])[])[];
           };
 
+    /*
+     * Registers event handlers for metadata tracks.
+     * The callback function will be called whenever the specified metadata track receives a message.
+     * **Example**
+     * ```
+     * [
+     *    [ track index, callback ]
+     * ]
+     * ```
+     */
+  subscribeToMetaTrack?:
+      | false
+      | any[][];
+
     /**
      * The monitor is part of the awm-player that monitors a stream as it is playing in the browser. It has functions to
      * determine a score, that indicates how well the stream is playing. Should this score fall below a defined
