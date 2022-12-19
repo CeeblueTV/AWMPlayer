@@ -75,6 +75,100 @@
   const PROTOCOL_CHANGE_EVENT = 'protocol_name';
   let tracksList = {};
 
+  let awm = {};
+
+  let playerSessionEvent = {
+    totalEvents: 0
+  };
+
+  let playerSession = {
+    setEvent: function (eventName, event) {
+      playerSession[eventName] = {
+        ...playerSessionEvent,
+        ...playerSession[eventName],
+        lastMessage: event.message,
+        lastTimeStamp: event.timeStamp
+      };
+      playerSession[eventName].totalEvents++;
+
+      console.log(playerSession);
+      console.log(awm);
+    }
+  };
+
+  /**
+   * Events that can be triggered by the player. A mix of standard and Ceeblue-specific events.
+   * This (n) indicates that these events appear in this order at startup.
+   *
+   * HTMLMediaElement: Events
+   * https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/
+   * Ceeblue Ultra-Low Latency and Multi-Protocol Player API
+   * https://trello-attachments.s3.amazonaws.com/5d0c898a53c2018d02c3bd25/5e9ef3f623bcca478a6d4bc9/7cec88a8a84c755895135470e001a033/CeeblueStreamingAWMPlayerAPIGuide.pdf
+   */
+  [
+    'abort', // Is triggered when the resource was not fully loaded, but not as the result of an error
+    'canplay', // Is triggered when the player can play the media, but estimates that not enough data has been loaded to play the media up to its end without having to stop for further buffering of content
+    'canplaythrough', // Is triggered when the player can play the media, and estimates that enough data has been loaded to play the media up to its end without having to stop for further buffering of content
+    'comboChosen', // Is triggered when the player has chosen a working playback and source combination; Ceeblue specific (2)
+    'durationchange', // Is triggered when the duration in the timeline changes
+    'emptied', // Is triggered when the media has become empty; for example, this event is sent if the media has already been loaded (or partially loaded), and the load() method is called to reload it
+    'ended', // Is triggered when the playback has ended because the player has no data
+    'error', // Is triggered when the player encountered an error
+    'haveStreamInfo', // Is triggered when the player has retrieved the metadata of a stream; Ceeblue specific; (1)
+    'initialized', // Is triggered when the player has been built; Ceeblue specific; (3)
+    'initializeFailed', // Is triggered when the player cannot be build; Ceeblue specific; (3)
+    'loadeddata', // Is triggered when the frame at the current playback position of the media has finished loading; often the first frame
+    'loadedmetadata', // Is triggered when the video is loaded; (4)
+    'loadstart', // Is triggered when the player has started to load a resource
+    // 'log', // Is triggered when the player logs a event; Ceeblue specific
+    'metaUpdate_tracks', // ??? Ceeblue specific
+    'monitor', // Is triggered when the monitor updates playback score
+    'pause', // Is triggered when the user hits pause or the player was paused by
+    'play', // Is triggered when the user hits play or autostart is enabled; (5)
+    'playerUpdate_trackChanged', // Is triggered when a track has changed
+    'playing', // Is triggered when the player is playing; (6)
+    //'progress', // Is triggered periodically as the player loads a resource (Is triggered to often)
+    'protocol_name',
+    'ratechange', // Is triggered when the playback rate has changed
+    'seeked', // Is triggered when seeking has ended
+    'seeking', // Is triggered when the player is seeking
+    'stalled', // Is triggered when the player is trying to fetch media data, but data is unexpectedly not forthcoming.
+    'suspend', // Is triggered when media data loading has been suspended
+    //'timeupdate', // Is triggered when the time indicated by the currentTime attribute has been updated (Is triggered to often)
+    'volumechange', // Is triggered when the volume of the player is changed
+    'waiting', // Is triggered when playback has stopped because of a temporary lack of data
+  ].forEach(function (eventName) {
+    awmElement.addEventListener(eventName, function (event) {
+      switch (eventName) {
+        case 'playing':
+          console.log(`  #> ${eventName} `, event.type, eventName === event.type);
+          playerSession.setEvent(eventName, event);
+          if (playerSession.play.totalEvents >= 1 && playerSession.playing.totalEvents >= 1) {
+            playerSession.timeToPlaying = playerSession.playing.lastTimeStamp - playerSession.play.lastTimeStamp;
+          }
+          // Check if the player is playing for the first time to measure the time to first frame
+          if (playerSession.play.totalEvents === 1 && playerSession.playing.totalEvents === 1) {
+            if (playerSession.haveStreamInfo.totalEvents === 1 && playerSession.comboChosen.totalEvents === 1 && playerSession.initialized.totalEvents === 1) {
+              playerSession.timeToFirstFrame = playerSession.playing.lastTimeStamp;
+            }
+          }
+          break;
+
+        case 'playerUpdate_trackChanged':
+          playerSession.setEvent(eventName, event);
+          if (playerSession.haveStreamInfo.totalEvents >= 1 && event.message.type === 'video') {
+            let track = Object.values(playerSession.haveStreamInfo.lastMessage.meta.tracks).filter(e => e.idx === +event.message.trackid)[0];
+            playerSession.videoBitrate_kbps = track.bps / 128;
+          }
+          break;
+
+        default:
+          // console.log('›››', eventName, event.timeStamp, 'detail: ' + JSON.stringify(event.detail), 'message: ' + JSON.stringify(event.message));
+          playerSession.setEvent(eventName, event);
+      }
+    }, true);
+  });
+
   // Event that fires when protocol changed. Return new protocol name
   awmElement.addEventListener(PROTOCOL_CHANGE_EVENT, function (event) {
     protocolCaptionElement.innerText = PROTOCOL_LABELS[event.message];
@@ -109,8 +203,8 @@
     target: awmElement,
     // Enable autoplay
     autoplay: true,
-    // Skin: 'dev',  <- add this to enable debugging mode
-    AwmVideoObject: {},
+    skin: 'dev',
+    AwmVideoObject: awm,
     // Protocols and it's priority
     forcePriority: {
       source: [
@@ -144,13 +238,13 @@
 
             var browserTimestamp = new Date();
             var winfinityTimecode = new Date(winfinityObj.timecode);
-            // var metadataTimestamp = new Date(meta.time);
+
+            var latency = browserTimestamp - winfinityTimecode;
 
             var browserTimestampStr = browserTimestamp.toISOString().replace(/Z|T/g, " ").replace(/-/g, ":");
             var winfinityTimecodeStr = winfinityTimecode.toISOString().replace(/Z|T/g, " ").replace(/-/g, ":");
-            // var metadataTimestampStr = metadataTimestamp.toISOString().replace(/Z|T/g, " ").replace(/-/g, ":");
 
-            metadataElement.innerHTML = `<br/>${winfinityTimecodeStr}(TIMECODE)<br/>${browserTimestampStr}&nbsp(BROWSER)<br/>`;
+            metadataElement.innerHTML = `${latency}ms (LATENCY)<br/>${winfinityTimecodeStr}(TIMECODE)<br/>${browserTimestampStr}&nbsp(BROWSER)<br/>`;
           }
         }
       ]
