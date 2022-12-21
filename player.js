@@ -529,11 +529,13 @@ function AwmVideo(streamName, options) {
         if ('api' in AwmVideo.player) {
 
           // Add monitoring
-          AwmVideo.monitor = getAwmDefaultMonitor(AwmVideo);
+          if (AwmVideo.options.monitor) {
+            AwmVideo.monitor = getAwmDefaultMonitor(AwmVideo);
+          }
 
           var events;
           //overwrite (some?) monitoring functions/values with custom ones if specified
-          if ('monitor' in AwmVideo.options) {
+          if ('monitor' in AwmVideo.options && AwmVideo.monitor) {
             AwmVideo.monitor.default = AwmUtil.object.extend({}, AwmVideo.monitor);
 
             if (Object.getOwnPropertyNames(AwmVideo.options.monitor).filter(item => typeof AwmVideo.options.monitor[item] === 'function').length === 0) {
@@ -549,7 +551,9 @@ function AwmVideo(streamName, options) {
           events = ['loadstart', 'play', 'playing'];
           for (var i in events) {
             AwmUtil.event.addListener(AwmVideo.video, events[i], function () {
-              AwmVideo.monitor.init();
+              if (AwmVideo.monitor) {
+                AwmVideo.monitor.init();
+              }
             });
           }
 
