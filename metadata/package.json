@@ -1,0 +1,10 @@
+{
+    "name": "json-meta-sender",
+    "version": "1.0.0",
+    "description": "",
+    "main": "json-meta-sender.js",
+    "author": "",
+    "license": "",
+    "type": "module"
+  }
+  
