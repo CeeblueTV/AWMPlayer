@@ -53,6 +53,7 @@
     <div class="awmvideo" id="adaptive-video-player"></div>
 </div>
 
+<script src="https://use.ntpjs.org/ntp.js" async defer></script>
 <script src="../dist/player.js"></script>
 <script>
 
@@ -173,9 +174,10 @@
 
   // Event that fires when protocol changed. Return new protocol name
   awmElement.addEventListener(PROTOCOL_CHANGE_EVENT, function (event) {
-    protocolCaptionElement.innerText = PROTOCOL_LABELS[event.message];
+    protocolCaptionElement.innerText = PROTOCOL_LABELS[event.message] || event.message;
   });
   awmElement.addEventListener("playerUpdate_trackChanged", ({ message }) => {
+    console.log("playerUpdate_trackChanged", message.type);
     if (message.type === "audio") {
       return;
     }
@@ -193,19 +195,47 @@
   awmElement.addEventListener("haveStreamInfo", function (event) {
     tracksList = event.message.meta.tracks;
     console.log("Event: StreamInfo (", JSON.stringify(event.message), ")");
-    for (let track in tracksList) {
-      track = tracksList[track];
-      if (track.type == "meta") {
-        options.subscribeToMetaTrack.push([track.idx, onMetadata]);
-      }
-    }
+    onMetaUpdate(tracksList);
   });
   awmElement.addEventListener("streamOffline", function (event) {
     console.log("Stream Offline");
   });
   awmElement.addEventListener("metaUpdate_tracks", function(event) {
     console.log("Updated metadatas :", event);
+    onMetaUpdate(event.message.meta.tracks);
   });
+
+  let metaTracks = {count: 0, updates: 0};
+  function onMetaUpdate(tracks) {
+    subscriptions = awm.reference && awm.reference.metaTrackSubscriptions;
+    metaTracks.updates++;
+    // Listen to new tracks
+    for (let track in tracks) {
+      track = tracks[track];
+      if (track.type == "meta") {
+        metaTracks[track.idx] = metaTracks.updates;
+        if (subscriptions) { // trick to subscribe on the fly, not just at start
+          if (track.idx in metaTracks)
+            continue;
+            subscriptions.add(track.idx, onMetadata);
+        } else {
+          options.subscribeToMetaTrack.push([track.idx, onMetadata]);
+        }
+        metaTracks.count++;
+      }
+    }
+    // Remove old tracks
+    for (let trackId in metaTracks) {
+      if (!isNaN(trackId) && metaTracks[trackId] < metaTracks.updates) {
+        delete metaTracks[trackId];
+        metaTracks.count--;
+        if (subscriptions) {
+          subscriptions.remove(trackId, onMetadata);
+        }
+      }
+    }
+    console.log("Metadatas found :", metaTracks.count, "(updates index: "+metaTracks.updates+")");
+  }
 
   function onMetadata(meta) {
     // console.log(meta);
@@ -221,7 +251,7 @@
       var winfinityObj = meta.data.winfinity;
       if (typeof winfinityObj === "string") { // AMF metadatas?
         var winfinityJson = meta.data.winfinity.replace(/(\w+:)|(\w+ :)/g, function(str) {
-          return "'" + str.substring(0, str.length - 1) + "':";
+          return "\"" + str.substring(0, str.length - 1) + "\":";
         });
         winfinityObj = JSON.parse(winfinityJson);
       }
@@ -270,9 +300,12 @@
     subscribeToMetaTrack: [] // Will be fulfilled when getting event haveStreamInfo
   };
 
+  // Parse query options
+  let query = new URLSearchParams(location.search);
+
   // Name of stream that would be played
-  const streamName = "as+3d6e90e2-8877-45d0-995c-2be437f6268e";
-  options.accessToken = "9b23465e-8f01-40ba-bef6-2bb338c05c01";
+  const streamName = query.get("streamName") || "xxx";
+  options.accessToken = query.get("token") || "9b23465e-8f01-40ba-bef6-2bb338c05c01";
   awmPlay(streamName, options);
 </script>
 </body>

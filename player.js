@@ -1579,7 +1579,8 @@ function AwmVideo(streamName, options) {
               if ('error' in AwmVideo.info) {
                 AwmVideo.reload('Reloading, stream info has error');
               }
-              return;
+              // TODO: Commented to get updates of meta tracks (Mist should do a correct fix of this)
+              //return;
             }
 
             AwmVideo.info = AwmUtil.object.extend(AwmVideo.info, data);
