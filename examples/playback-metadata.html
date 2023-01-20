@@ -195,7 +195,7 @@
   awmElement.addEventListener("haveStreamInfo", function (event) {
     tracksList = event.message.meta.tracks;
     console.log("Event: StreamInfo (", JSON.stringify(event.message), ")");
-    onMetaUpdate(tracksList);
+    onMetaUpdate(tracksList); // 1st Meta Update comes always from haveStreamInfo
   });
   awmElement.addEventListener("streamOffline", function (event) {
     console.log("Stream Offline");
@@ -247,6 +247,7 @@
       ctx.drawImage(this.video, 0, 0);
     }catch(e){console.error(e);}
 
+    // TODO: make it generic, not related with "winfinity"
     if (meta.data && meta.data.winfinity) {
       var winfinityObj = meta.data.winfinity;
       if (typeof winfinityObj === "string") { // AMF metadatas?
@@ -276,6 +277,9 @@
     }
   }
 
+  // Parse query options
+  let query = new URLSearchParams(location.search);
+
   let options = {
     //The host from which the stream will be received
     host: "https://fly.live.ceeblue.tv:4433/",
@@ -288,7 +292,7 @@
     // Protocols and it"s priority
     forcePriority: {
       source: [
-        ["type", ["webrtc"]],
+        ["type", [query.get("source") || "webrtc"]],
       ]
     },
     forceTrack: true,
@@ -299,9 +303,6 @@
     },
     subscribeToMetaTrack: [] // Will be fulfilled when getting event haveStreamInfo
   };
-
-  // Parse query options
-  let query = new URLSearchParams(location.search);
 
   // Name of stream that would be played
   const streamName = query.get("streamName") || "xxx";

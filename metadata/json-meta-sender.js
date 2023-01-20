@@ -34,7 +34,7 @@ function main() {
 	});
 
 	setInterval(() => {
-		// TODO: Use an NTP server with https://www.npmjs.com/package/ntp-time
+		// TODO: make it generic, not related with "winfinity"
 		let metadata = `{"winfinity": {"timecode":${Date.now()}}}\n`;
 		//console.log("Sending JSON metadata :", metadata);
 		client.write(metadata);

@@ -700,11 +700,12 @@ function AwmVideo(streamName, options) {
                       }
 
                       if (nextAtGlobal) {
-                        me.checktimer = AwmVideo.timers.start(function(){
+                        // TODO: Fix checktimer, currentTime may be ~= 0 here at start when autoplay is true
+                        /*me.checktimer = AwmVideo.timers.start(function(){
                           //console.warn("checking because timer");
                           me.check();
-                        },nextAtGlobal-AwmVideo.player.api.currentTime*1e3);
-                        //console.warn(me.checktimer,"will check in",nextAtGlobal-AwmVideo.player.api.currentTime*1e3);
+                        },nextAtGlobal-AwmVideo.player.api.currentTime*1e3);*/
+                        //console.warn(me.checktimer,"will check in",nextAtGlobal-AwmVideo.player.api.currentTime*1e3, "(currentTime :", AwmVideo.player.api.currentTime, ")");
 
                         /*if (nextAtGlobal-AwmVideo.player.api.currentTime*1e3 > 2000) {
                           console.warn(AwmVideo.player.api.currentTime*1e3,me.subscriptions[0].buffer.map(function(a){ return a.time; }));
