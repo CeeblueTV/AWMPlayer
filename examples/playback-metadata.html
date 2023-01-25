@@ -196,6 +196,7 @@
   awmElement.addEventListener("haveStreamInfo", function (event) {
     tracksList = event.message.meta.tracks;
     console.log("Event: StreamInfo (", JSON.stringify(event.message), ")");
+    options.subscribeToMetaTrack.length = 0; // reset array
     onMetaUpdate(tracksList); // 1st Meta Update comes always from haveStreamInfo
   });
   awmElement.addEventListener("streamOffline", function (event) {
