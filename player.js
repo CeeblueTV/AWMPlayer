@@ -597,7 +597,9 @@ function AwmVideo(streamName, options) {
                     this.send_queue.push(obj);
                   };
 
-                  var stayahead = 5; //ask AwmServer to fastforward to stayahead seconds ahead, so we receive messages earlier
+                  const STAY_AHEAD = 5; //ask AwmServer to fastforward to STAY_AHEAD seconds ahead, so we receive messages earlier
+                  const MESSAGE_LIMIT = 5; //Ignore messages older than MESSAGE_LIMIT seconds
+                  const TIMER_MARGIN = 100; //do not generate a timer if message time is less than milliseconds ahead
 
                   me.socket.setTracks = function(){
                     me.s({type:"tracks",meta:AwmUtil.object.keys(me.subscriptions).join(",")});
@@ -607,7 +609,8 @@ function AwmVideo(streamName, options) {
 
                     me.socket.setTracks();
                     me.s({type:"set_speed",play_rate:AwmVideo.player.api.playbackRate});
-                    me.s({type:"seek",seek_time:Math.round(AwmVideo.player.api.currentTime*1e3),ff_to:Math.round((AwmVideo.player.api.currentTime+stayahead)*1e3)});
+                    //me.s({type:"seek",seek_time:Math.round(AwmVideo.player.api.currentTime*1e3),ff_to:Math.round((AwmVideo.player.api.currentTime+STAY_AHEAD)*1e3)});
+                    //console.warn("First seek to currentTime :", AwmVideo.player.api.currentTime);
                     me.socket.addEventListener("message",function(e){
                       if (!e.data) { AwmVideo.log("Subtitle websocket received empty message."); return; }
                       var message = JSON.parse(e.data);
@@ -617,7 +620,8 @@ function AwmVideo(streamName, options) {
                         if (message.track in me.subscriptions) {
                           //console.warn("received:",message.track,message.data);
                           me.subscriptions[message.track].buffer.push(message);
-                          //console.warn("received:",message.track,message.time,"currentTime:",AwmVideo.player.api.currentTime,"bufferlength:",me.subscriptions[message.track].buffer.length,"timer:",!!me.checktimer);
+                          let delay = message.time-AwmVideo.player.api.currentTime*1e3;
+                          console.warn("received:",message.track,message.time,"currentTime:",AwmVideo.player.api.currentTime,"bufferlength:",me.subscriptions[message.track].buffer.length,"timer:",!!me.checktimer, "delay (ms):", delay);
 
                           if (!me.checktimer) {
                             me.check();
@@ -626,12 +630,6 @@ function AwmVideo(streamName, options) {
                         }
                       }
                       //per track, the messages should arrive in the correct order and we shouldn't need to do sorting
-
-
-                      /*if ("time" in message) { //TODO remove
-                        var bufferlength = message.time*1e-3 - AwmVideo.player.api.currentTime;
-                        console.warn("buffer length",bufferlength);
-                      }*/
 
                       if ("type" in message) {
                         switch (message.type) {
@@ -674,10 +672,11 @@ function AwmVideo(streamName, options) {
                       var nextAtGlobal = null;
                       for (var i in me.subscriptions) {
                         var buffer = me.subscriptions[i].buffer;
-                        while (buffer.length && (buffer[0].time <= AwmVideo.player.api.currentTime*1e3)) {
+                        while (buffer.length && (buffer[0].time <= AwmVideo.player.api.currentTime*1e3+TIMER_MARGIN)) {
                           var message = buffer.shift();
-                          if (message.time < (AwmVideo.player.api.currentTime - 5) * 1e3) {
+                          if (message.time < (AwmVideo.player.api.currentTime - MESSAGE_LIMIT) * 1e3) {
                             //the message is at least 5 seconds older than the video time
+                            console.warn("Message older than", MESSAGE_LIMIT, "seconds ignored, message.time :", message.time, "currentTime :", AwmVideo.player.api.currentTime);
                             continue;
                           }
                           else {
@@ -692,50 +691,53 @@ function AwmVideo(streamName, options) {
                         }
                       }
 
-                      //add rate limiting: do not ask for fast forward more than once a second
-                      var now = (new Date()).getTime()
-                      if (now > lastff+1e3) {
-                        me.s({type:"fast_forward",ff_to:Math.round((AwmVideo.player.api.currentTime+stayahead)*1e3)});
-                        lastff = now;
-                      }
-
                       if (nextAtGlobal) {
-                        // TODO: Fix checktimer, currentTime may be ~= 0 here at start when autoplay is true
-                        /*me.checktimer = AwmVideo.timers.start(function(){
+                        let toWait = nextAtGlobal-AwmVideo.player.api.currentTime*1e3;
+                        me.checktimer = AwmVideo.timers.start(function(){
                           //console.warn("checking because timer");
                           me.check();
-                        },nextAtGlobal-AwmVideo.player.api.currentTime*1e3);*/
-                        //console.warn(me.checktimer,"will check in",nextAtGlobal-AwmVideo.player.api.currentTime*1e3, "(currentTime :", AwmVideo.player.api.currentTime, ")");
-
-                        /*if (nextAtGlobal-AwmVideo.player.api.currentTime*1e3 > 2000) {
-                          console.warn(AwmVideo.player.api.currentTime*1e3,me.subscriptions[0].buffer.map(function(a){ return a.time; }));
-                        }*/
-                        //console.warn(nextAtGlobal-AwmVideo.player.api.currentTime*1e3,me.subscriptions[0].buffer.length);
+                        },toWait);
+                        console.warn(me.checktimer,"will check in",toWait, "(currentTime :", AwmVideo.player.api.currentTime, ")");
+                      } else {
+                        //add rate limiting: do not ask for fast forward more than once a second
+                        let now = (new Date()).getTime();
+                        if (now > lastff+1e3) {
+                          let fastForwardTo = Math.round((AwmVideo.player.api.currentTime+STAY_AHEAD)*1e3);
+                          console.warn("fast_forward to", fastForwardTo, "currentTime :", AwmVideo.player.api.currentTime);
+                          me.s({type:"fast_forward",ff_to:fastForwardTo});
+                          lastff = now;
+                        }
                       }
-                      /*else {
-                        console.warn(me.checktimer,"not checking");
-                        if (me.subscriptions[0].buffer.length) console.warn("no nextAtGlobal",me.subscriptions[0].buffer.length,AwmVideo.player.api.currentTime*1e3,me.subscriptions[0].buffer.map(function(a){ return a.time; }));
-                      }*/
-
                     };
 
+                    this.listeners.seeked = AwmUtil.event.addListener(AwmVideo.video,"playerUpdate_trackChanged",function(){
+                      console.warn("Event playerUpdate_trackChanged, currentTime :", Math.round(AwmVideo.player.api.currentTime*1e3));
+                      if (me.checktimer) {
+                        AwmVideo.timers.stop(me.checktimer);
+                        me.checktimer = null;
+                        me.check();
+                      }
+                    });
                     this.listeners.seeked = AwmUtil.event.addListener(AwmVideo.video,"seeked",function(){
+                      console.warn("Event seek to", Math.round(AwmVideo.player.api.currentTime*1e3));
                       for (var i in me.subscriptions) {
                         me.subscriptions[i].buffer = [];
                       }
-                      me.s({type:"seek",seek_time:Math.round(AwmVideo.player.api.currentTime*1e3),ff_to:Math.round((AwmVideo.player.api.currentTime+stayahead)*1e3)});
-                      //console.warn("seek to",Math.round(AwmVideo.player.api.currentTime*1e3));
+                      me.s({type:"seek",seek_time:Math.round(AwmVideo.player.api.currentTime*1e3),ff_to:Math.round((AwmVideo.player.api.currentTime+STAY_AHEAD)*1e3)});
                     });
                     this.listeners.pause = AwmUtil.event.addListener(AwmVideo.video,"pause",function(){
+                      console.warn("Event hold checktimer :", !!me.checktimer);
                       me.s({type:"hold"});
                       AwmVideo.timers.stop(me.checktimer);
                       me.checktimer = null;
                     });
                     this.listeners.playing = AwmUtil.event.addListener(AwmVideo.video,"playing",function(){
+                      console.warn("Event play checktimer :", !!me.checktimer);
                       me.s({type:"play"});
                       if (!me.checktimer) me.check();
                     });
                     this.listeners.ratechange = AwmUtil.event.addListener(AwmVideo.video,"ratechange",function(){
+                      console.warn("Event set_speed", AwmVideo.player.api.playbackRate);
                       me.s({type:"set_speed",play_rate:AwmVideo.player.api.playbackRate});
                     });
                   }
