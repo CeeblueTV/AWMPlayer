@@ -18,7 +18,7 @@ function main() {
 	}
 	console.log("Sending timecode every", TIMECODE_INTERVAL, "milliseconds");
 
-	const client = net.connect(Number(process.argv[2]) || 3456, host);
+	const client = net.connect(Number(process.argv[3]) || 3456, host);
 	client.on("connection", function() {
 		console.log("connection");
 	});

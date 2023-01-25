@@ -94,8 +94,9 @@
       };
       playerSession[eventName].totalEvents++;
 
-      console.log(playerSession);
-      console.log(awm);
+      console.log("Event", eventName, ":", event.message);
+      //console.log(playerSession);
+      //console.log(awm);
     }
   };
 
@@ -189,7 +190,7 @@
   });
   // Logging setup (optional). Event that fires when something were logged
   awmElement.addEventListener("log", function (log) {
-    console.log(">", log.message);
+    //console.log(">", log.message);
   });
   // Event that fires when got info from stream
   awmElement.addEventListener("haveStreamInfo", function (event) {
