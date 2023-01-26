@@ -245,8 +245,8 @@
 
     try{
       screenshot.width = this.video.clientWidth;
-      screenshot.height = 20;
-      ctx.drawImage(this.video, 0, 0);
+      screenshot.height = 40 ;
+      ctx.drawImage(this.video, 0, 0, 720, 480);
     }catch(e){console.error(e);}
 
     // TODO: make it generic, not related with "winfinity"
