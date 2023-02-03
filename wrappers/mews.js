@@ -409,7 +409,7 @@ p.prototype.build = function (AwmVideo, callback) {
       this.ws.onopen = function () {
         this.wasConnected = true;
 
-        if (AwmVideo.info.forceTrackIdxes.H264) {
+        if ('H264' in AwmVideo.info.forceTrackIdxes) {
           player.api.setTracks({ video: AwmVideo.info.forceTrackIdxes.H264 });
         }
 
