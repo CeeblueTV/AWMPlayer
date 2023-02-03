@@ -162,7 +162,9 @@
           playerSession.setEvent(eventName, event);
           if (playerSession.haveStreamInfo.totalEvents >= 1 && event.message.type === "video") {
             let track = Object.values(playerSession.haveStreamInfo.lastMessage.meta.tracks).filter(e => e.idx === +event.message.trackid)[0];
-            playerSession.videoBitrate_kbps = track.bps / 128;
+            if (track) {
+              playerSession.videoBitrate_kbps = track.bps / 128;
+            }
           }
           break;
 
@@ -297,7 +299,8 @@
         ["type", [query.get("source") || "webrtc"]],
       ]
     },
-    forceTrack: true,
+    // Force video track at start to the nearest bitrate
+    forceTrack: (streaminfo) => bitrateVideoTrackSelector(streaminfo, 230000), // "false" to disable
     // Observe stream and change quality/protocol if needed.
     monitor: {
       // Here you can add fields to override them in monitor (default AdjustableMonitor monitor). If any function would be here it just replace AdjustableMonitor;

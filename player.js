@@ -24,7 +24,6 @@ function bitrateVideoTrackSelector(streamInfo, bitrate) {
     trackPerCodec[track.codec] = track;
     forceTrackIdxes[track.codec] = track.idx;
   }
-  console.log(`forceTrackIdxes : ${JSON.stringify(forceTrackIdxes)}`);
   return forceTrackIdxes;
 }
 
@@ -371,9 +370,13 @@ function AwmVideo(streamName, options) {
     AwmVideo.info.forceTrackIdxes = {};
     AwmUtil.event.send('haveStreamInfo', streamInfo, AwmVideo.options.target);
     AwmVideo.log('Stream info was loaded succesfully.');
-    if (options.forceTrack && typeof options.forceTrack === 'function') {
+    if (options.forceTrack) {
+      let forceTrackCb = (streaminfo) => bitrateVideoTrackSelector(streaminfo, 0); // default behavior = select lowest bitrate
+      if ((typeof options.forceTrack === 'function')) {
+        forceTrackCb = options.forceTrack;
+      }
       try {
-        const forceTrackIdxes = options.forceTrack(streamInfo);
+        const forceTrackIdxes = forceTrackCb(streamInfo);
         AwmVideo.info.forceTrackIdxes = forceTrackIdxes;
       } catch (e) {
         AwmVideo.log(` couldn't get force idx`);
