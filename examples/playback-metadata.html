@@ -302,10 +302,7 @@
     // Force video track at start to the nearest bitrate
     forceTrack: (streaminfo) => bitrateVideoTrackSelector(streaminfo, 230000), // "false" to disable
     // Observe stream and change quality/protocol if needed.
-    monitor: {
-      // Here you can add fields to override them in monitor (default AdjustableMonitor monitor). If any function would be here it just replace AdjustableMonitor;
-      PROTOCOL_CHANGE_EVENT, // Override event"s name that shoots when protocol initialized or changed
-    },
+    monitor: getAwmMiddleMonitor(),
     subscribeToMetaTrack: [] // Will be fulfilled when getting event haveStreamInfo
   };
 
