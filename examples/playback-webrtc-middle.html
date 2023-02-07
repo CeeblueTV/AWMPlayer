@@ -56,6 +56,8 @@
           ['type', ['webrtc']],
         ]
       },
+      // Force video track at start to the nearest bitrate
+      forceTrack: (streaminfo) => bitrateVideoTrackSelector(streaminfo, 250000), // "false" to disable
       monitor: getAwmMiddleMonitor()
     };
 
