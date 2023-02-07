@@ -7,6 +7,27 @@ function awmPlay(streamName, options) {
   return new AwmVideo(streamName, options);
 }
 
+// forceVideTrack util function
+// bitrate - bytes/s
+function bitrateVideoTrackSelector(streamInfo, bitrate) {
+  const tracksList = Object.values(streamInfo.meta.tracks);
+  const trackPerCodec = {}, forceTrackIdxes = {};
+  // Search the nearest bitrate for each video codec
+  for (const track of tracksList) {
+    if (track.type !== "video")
+      continue;
+    const current = trackPerCodec[track.codec];
+    if (current) {
+      const diff = Math.abs(bitrate - track.bps);
+      if (diff > Math.abs(bitrate - current.bps))
+        continue;
+    }
+    trackPerCodec[track.codec] = track;
+    forceTrackIdxes[track.codec] = track.idx;
+  }
+  return forceTrackIdxes;
+}
+
 function AwmVideo(streamName, options) {
   var AwmVideo = this;
 
@@ -30,7 +51,7 @@ function AwmVideo(streamName, options) {
     forcePlayer: false,           // Don't force a player
     forceSource: false,           // Don't force a source
     forcePriority: false,         // No custom priority sorting
-    forceTrack: false,            // Don't force track selecting
+    forceTrack: false,            // Function to force video track at start, (streamInfo) => return Object (default is disabled)
     monitor: false,               // No custom monitoring
     reloadDelay: false,           // Don't override default reload delay
     urlappend: false,             // Don't add this to urls
@@ -337,48 +358,36 @@ function AwmVideo(streamName, options) {
     return false;
   }
 
-  function setForceIdxes(streamInfo, options) {
-    if (options.forceTrack === false) {
-      return;
-    }
-
-    try {
-      const tracksList = Object.values(streamInfo.meta.tracks).sort((first, second) => first.bps >= second.bps ? -1 : 1);
-
-      const codecs = new Set(tracksList.map(e => e.codec));
-
-      const forceTrackIdxes = { };
-
-      for (const codec of codecs) {
-        const tracks = tracksList.filter(e => e.codec === codec);
-        forceTrackIdxes[codec] = tracks[tracks.length - 1].idx;
-      }
-
-      AwmVideo.info.forceTrackIdxes = forceTrackIdxes;
-    } catch (e) {
-      AwmVideo.log(` couldn't' get force idx`);
-    }
-  }
-
-  function onStreamInfo(d) {
+  function onStreamInfo(streamInfo) {
 
     if ((AwmVideo.player) && (AwmVideo.player.api) && (AwmVideo.player.api.unload)) {
       AwmVideo.log('Received new stream info while a player was already loaded: unloading player');
       AwmVideo.player.api.unload();
     }
 
-    AwmVideo.info = d;
+    AwmVideo.info = streamInfo;
     AwmVideo.info.updated = new Date();
     AwmVideo.info.forceTrackIdxes = {};
-    AwmUtil.event.send('haveStreamInfo', d, AwmVideo.options.target);
+    AwmUtil.event.send('haveStreamInfo', streamInfo, AwmVideo.options.target);
     AwmVideo.log('Stream info was loaded succesfully.');
-    setForceIdxes(d, options);
+    if (options.forceTrack) {
+      let forceTrackCb = (streaminfo) => bitrateVideoTrackSelector(streaminfo, 0); // default behavior = select lowest bitrate
+      if ((typeof options.forceTrack === 'function')) {
+        forceTrackCb = options.forceTrack;
+      }
+      try {
+        const forceTrackIdxes = forceTrackCb(streamInfo);
+        AwmVideo.info.forceTrackIdxes = forceTrackIdxes;
+      } catch (e) {
+        AwmVideo.log(` couldn't get force idx`);
+      }
+    }
 
-    if ('error' in d) {
-      var e = d.error;
-      if ('on_error' in d) {
+    if ('error' in streamInfo) {
+      var e = streamInfo.error;
+      if ('on_error' in streamInfo) {
         AwmVideo.log(e);
-        e = d.on_error;
+        e = streamInfo.on_error;
       }
       AwmVideo.showError(e, { reload: true, hideTitle: true });
       return;
@@ -453,16 +462,16 @@ function AwmVideo(streamName, options) {
       return this.size;
     };
 
-    d.hasVideo = hasVideo(d);
+    streamInfo.hasVideo = hasVideo(streamInfo);
 
 
-    if (d.type == 'live') {
+    if (streamInfo.type == 'live') {
       //calculate duration so far
       var maxms = 0;
       for (var i in AwmVideo.info.meta.tracks) {
         maxms = Math.max(maxms, AwmVideo.info.meta.tracks[i].lastms);
       }
-      d.lastms = maxms;
+      streamInfo.lastms = maxms;
     } else {
       //If this is VoD and was already playing, return to the previous time
       //this is triggered when the AwmInput is killed/crashes during playback
