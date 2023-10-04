@@ -28,7 +28,7 @@ Then open [playback-webrtc-middle.html](/examples/playback-webrtc-middle.html), 
 You can add query options to change the `host` and `streamName` like this :
 
 ```
-https://localhost:8081/examples/playback-webrtc-middle.html?host=fly.live.ceeblue.tv:4433&streamName=out+de1e6f7c-e5db-450b-9603-c3644274779b
+https://localhost:8081/examples/playback-webrtc-middle.html?host=fly.live.ceeblue.tv:4433&stream=out+de1e6f7c-e5db-450b-9603-c3644274779b
 ```
 
 ## Video quality switching

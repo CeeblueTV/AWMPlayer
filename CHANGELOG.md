@@ -1,3 +1,8 @@
+# 1.0.8  (2023-10-04)
+- Update forceTrack option to take a function in argument
+- Add global function bitrateVideoTrackSelector to use it with forceTrack in order to select the video track with nearest bitrate
+- Append "Middle quality" monitor
+
 # 1.0.7  (2023-10-04)
 - Fix isBrowserSupported implementations to detect correctly component unavailable
 - In complement of WebRTCBrowserEqualizerLoaded check, add a way to detect when official webrtc-adapter has been loaded

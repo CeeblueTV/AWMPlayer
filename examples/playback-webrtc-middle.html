@@ -64,7 +64,7 @@
       monitor: getAwmMiddleMonitor()
     };
 
-    const streamName = query.get("streamName") || 'out+de1e6f7c-e5db-450b-9603-c3644274779b';
+    const streamName = query.get("stream") || 'out+de1e6f7c-e5db-450b-9603-c3644274779b';
     if (query.has("token")) {
       options.token = query.get("token");
     }
