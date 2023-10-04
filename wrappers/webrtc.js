@@ -219,7 +219,7 @@ p.prototype.build = function (AwmVideo, callback) {
           thisWebRTCPlayer.isConnected = true;
           thisWebRTCPlayer.isConnecting = false;
           const video = AwmVideo.info.forceTrackIdxes[me.selectedVideoCodec];
-          if (video) {
+          if (typeof video !== 'undefined') {
             thisWebRTCPlayer.setTrack({ video });
           }
           break;

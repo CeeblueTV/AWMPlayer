@@ -55,7 +55,7 @@ p.prototype.build = function (AwmVideo, callback) {
 
     var source = document.createElement('source');
     const URI = new URL(AwmVideo.source.url);
-    if (AwmVideo.info.forceTrackIdxes.H264) {
+    if ('H264' in AwmVideo.info.forceTrackIdxes) {
       URI.searchParams.append('video', AwmVideo.info.forceTrackIdxes.H264);
     }
     source.setAttribute('src', URI.href);
