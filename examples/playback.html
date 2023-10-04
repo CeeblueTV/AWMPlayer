@@ -42,8 +42,11 @@
 
     const awmElement = document.getElementById('adaptive-video-player');
 
+    // Parse query options
+    const query = new URLSearchParams(location.search);
+
     let options = {
-      host: 'https://sea.ceeblue.tv:4433/',
+      host: 'https://' + (query.get("host") || 'fly.live.ceeblue.tv:4433/'),
       target: awmElement,
       autoplay: true,
       AwmVideoObject: {},
@@ -54,8 +57,10 @@
       }
     };
 
-    const streamName = 'out+219e8dc8-705a-44cd-9bc7-361f513a1f78';
-
+    const streamName = query.get("stream") || 'out+de1e6f7c-e5db-450b-9603-c3644274779b';
+    if (query.has("token")) {
+      options.token = query.get("token");
+    }
     awmPlay(streamName, options);
   }
 </script>

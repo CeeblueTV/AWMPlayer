@@ -1,3 +1,8 @@
+# 1.0.7  (2023-10-04)
+- Fix isBrowserSupported implementations to detect correctly component unavailable
+- In complement of WebRTCBrowserEqualizerLoaded check, add a way to detect when official webrtc-adapter has been loaded
+- Add stream/host query properties to examples
+
 # 1.0.6  (2022-07-29)
 
 ---

@@ -7,7 +7,7 @@ awmplayers.mews = {
   },
   isBrowserSupported: function (mimetype, source, AwmVideo) {
 
-    if ((!('WebSocket' in window)) || (!('MediaSource' in window))) {
+    if (!window.WebSocket || !window.MediaSource) {
       return false;
     }
 

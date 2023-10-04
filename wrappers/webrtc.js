@@ -7,7 +7,7 @@ awmplayers.webrtc = {
   },
   isBrowserSupported: function (mimetype, source, AwmVideo) {
 
-    if ((!('WebSocket' in window)) || (!('RTCPeerConnection' in window))) {
+    if (!window.WebSocket || !window.RTCPeerConnection) {
       return false;
     }
 
@@ -29,8 +29,9 @@ p.prototype.build = function (AwmVideo, callback) {
   me.name = 'webrtc';
   me.selectedVideoCodec = "H264"
 
-  if ((typeof WebRTCBrowserEqualizerLoaded == 'undefined') || (!WebRTCBrowserEqualizerLoaded)) {
-    //load it
+  if (!window.WebRTCBrowserEqualizerLoaded && // Check if webrtc.js is already loaded
+    (!window.adapter || !window.adapter.sdp)) { // Check if webrtc-adapter.js is already loaded
+    // Load our webrtc-adapter if not already done
     var scripttag = document.createElement('script');
     scripttag.src = AwmVideo.urlappend(AwmVideo.options.host + '/webrtc.js');
     AwmVideo.log('Retrieving webRTC browser equalizer code from ' + scripttag.src);
