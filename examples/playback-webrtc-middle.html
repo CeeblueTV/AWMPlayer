@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>AWM-player example</title>
+    <meta charset="utf-8">
+    <meta content="20.12.2022~1" name="version">
+    <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport">
+    <style>
+        html {
+            margin: 0;
+            padding: 0;
+            display: table;
+            width: 100%;
+            height: 100%;
+        }
+
+        body {
+            color: white;
+            background: #0f0f0f;
+            margin: 0;
+            padding: 0;
+            display: table-cell;
+            vertical-align: middle;
+            text-align: center
+        }
+
+        body > div > div {
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+<div class="awmvideo" id="adaptive-video-player">
+</div>
+<script src="../dist/player.js"></script>
+<script>
+  startPlayback();
+
+  function startPlayback() {
+    AwmSkins.default.css.skin = '../dist/skins/default.css';
+    AwmSkins.dev.css.skin = '../dist/skins/dev.css';
+
+    const awmElement = document.getElementById('adaptive-video-player');
+
+    awmElement.addEventListener('log', function (log) {
+      console.log('>', log.message);
+    });
+
+    // Parse query options
+    let query = new URLSearchParams(location.search);
+
+    let options = {
+      host: 'https://' + (query.get("host") || 'fly.live.ceeblue.tv:4433/'),
+      target: awmElement,
+      autoplay: true,
+      AwmVideoObject: {},
+      forcePriority: {
+        source: [
+          ['type', ['webrtc']],
+        ]
+      },
+      // Force video track at start to the nearest bitrate
+      forceTrack: (streaminfo) => bitrateVideoTrackSelector(streaminfo, 250000), // "false" to disable
+      monitor: getAwmMiddleMonitor()
+    };
+
+    const streamName = query.get("streamName") || 'out+de1e6f7c-e5db-450b-9603-c3644274779b';
+    if (query.has("token")) {
+      options.token = query.get("token");
+    }
+    awmPlay(streamName, options);
+  }
+</script>
+
+</body>
+</html>

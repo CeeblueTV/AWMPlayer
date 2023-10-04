@@ -465,3 +465,264 @@ function getAwmAdjustableMonitor() {
     },
   };
 }
+
+function getAwmMiddleMonitor() {
+  return {
+    TARGET_BITRATE_ON_STARTUP: 2000000 / 8,
+    MONITORING_WIDTH: 8,
+    QUALITY_SWITCH_UP_TIMEOUT: 5.0,
+    QUALITY_SWITCH_DOWN_TIMEOUT: 5.0,
+    QUALITY_SWITCH_CONNECTION_TIMEOUT: 1.0,
+    QUALITY_SWITCH_TIMEOUTS: [5, 20, 60, 120, 300, 600],
+    MIN_VALID_SCORE: 0.3,
+    PROTOCOL_CHANGE_EVENT: 'protocol_name',
+
+    qualitySwitchUpTimeout: 0.0,
+    qualitySwitchPreviousMode: null,
+    qualitySwitchTimestamp: null,
+    SWITCH_MODE: {
+      UP: 'UP',
+      DOWN: 'DOWN',
+      INIT: 'INIT'
+    },
+    currentVideoTrackIndex: -1,
+    trackIdListener: null,
+
+    SCORE_THRESHOLD_MIN: 0.5,
+    SCORE_THRESHOLD_AVG_TAKEOFF: 0.94,
+    SCORE_THRESHOLD_AVG_REGULAR: 0.96,
+
+    init: function () {
+      if (this.vars.active) {
+        return;
+      } //it's already running, don't bother
+
+      this.addTrackIdListener();
+
+      this.AwmVideo.log('Enabling monitor');
+
+      this.vars.active = true;
+
+      AwmUtil.event.send(this.PROTOCOL_CHANGE_EVENT, this.AwmVideo.source.type, this.AwmVideo.options.target);
+
+      this.repeat();
+    },
+
+    addTrackIdListener: function () {
+      if (this.trackIdListener === null) {
+        this.trackIdListener = this.AwmVideo.options.target.addEventListener('playerUpdate_trackChanged', (event) => {
+          let track = event.message;
+          if (track.type === 'video') {
+            this.videoTrackId = track.trackid;
+          }
+        });
+      }
+    },
+
+    check: function (score) {
+      // Get last values
+      const values = this.vars.values
+        .filter(item => item.hasOwnProperty('score') && item.score >= 0.0)
+        .filter(item => item.hasOwnProperty('clock'))
+        .slice(Math.max(this.vars.values.length - this.MONITORING_WIDTH, 0));
+
+      if (values.length === 0) {
+        return;
+      }
+
+      const monitoringDuration = values[values.length - 1].clock - values[0].clock;
+      const scores = values.map(item => Math.min(item.score, 1.0));
+      const scoreMin = Math.min(...scores);
+      const scoreSum = scores.reduce((accum, val) => accum + val);
+      const scoreAvg = scoreSum / scores.length;
+      this.AwmVideo.log(`Monitor: Min: ${scoreMin.toFixed(3)} Avg: ${scoreAvg.toFixed(3)} of ${monitoringDuration.toFixed(0)}s`);
+
+      if (this.currentVideoTrackIndex === -1) {
+        this.AwmVideo.log('Monitor: INIT');
+
+        this.qualitySwitchUpTimeout = 0.0;
+
+        this.result = this.SWITCH_MODE.INIT;
+        return true;
+      }
+
+      // Switch UP
+      if (monitoringDuration >= this.QUALITY_SWITCH_UP_TIMEOUT) {
+        if (scoreMin > 0.8 && scoreAvg >= 0.98) {
+
+          if (this.qualitySwitchPreviousMode === this.SWITCH_MODE.DOWN) {
+            let duration = (Date.now() - this.qualitySwitchTimestamp) * 0.001;
+            this.AwmVideo.log(`Monitor: UP timeout ${duration.toFixed(3)} of ${this.qualitySwitchUpTimeout.toFixed(3)}`);
+
+            if (duration >= this.qualitySwitchUpTimeout) {
+              this.AwmVideo.log('Monitor: => UP');
+
+              this.result = this.SWITCH_MODE.UP;
+              return true;
+            }
+          } else {
+            this.AwmVideo.log('Monitor: => UP');
+
+            this.result = this.SWITCH_MODE.UP;
+            return true;
+          }
+        }
+      }
+
+      // Switch DOWN
+      // Immediately by min score
+      if ((this.qualitySwitchPreviousMode === this.SWITCH_MODE.UP) &&
+        (monitoringDuration >= this.QUALITY_SWITCH_CONNECTION_TIMEOUT)
+        && (monitoringDuration < this.QUALITY_SWITCH_DOWN_TIMEOUT)) {
+        if ((scoreMin <= this.SCORE_THRESHOLD_MIN) || (scoreAvg <= this.SCORE_THRESHOLD_AVG_TAKEOFF)) {
+          this.AwmVideo.log(`Monitor: => DOWN by min ${scoreMin.toFixed(5)} <= ${this.SCORE_THRESHOLD_MIN} or avg ${scoreAvg.toFixed(5)} <= ${this.SCORE_THRESHOLD_AVG_TAKEOFF} (on takeoff)`);
+
+          this.result = this.SWITCH_MODE.DOWN;
+          return true;
+        }
+      }
+
+      // By average score
+      if (monitoringDuration >= this.QUALITY_SWITCH_DOWN_TIMEOUT) {
+        if ((scoreMin <= this.SCORE_THRESHOLD_MIN) || (scoreAvg <= this.SCORE_THRESHOLD_AVG_REGULAR)) {
+          this.AwmVideo.log(`Monitor: => DOWN by min ${scoreMin.toFixed(5)} <= ${this.SCORE_THRESHOLD_MIN} or avg ${scoreAvg.toFixed(5)} <= ${this.SCORE_THRESHOLD_AVG_REGULAR}`);
+
+          this.result = this.SWITCH_MODE.DOWN;
+          return true;
+        }
+      }
+
+      return false;
+    },
+
+    decreaseQualityTimeout: function () {
+      const currentTimeoutIndex = this.QUALITY_SWITCH_TIMEOUTS.indexOf(this.qualitySwitchUpTimeout);
+      if (currentTimeoutIndex > 0) {
+        this.qualitySwitchUpTimeout = this.QUALITY_SWITCH_TIMEOUTS[currentTimeoutIndex - 1];
+      }
+    },
+
+    action: function () {
+      if (!this.hasOwnProperty('tracklist')) {
+        let tracks = AwmUtil.tracks.parse(this.AwmVideo.info.meta.tracks);
+        let videoTracks = [];
+        if (tracks && tracks.video) {
+          videoTracks = Object.values(tracks.video);
+          this.AwmVideo.log(`Monitor: Tracks selection for '${this.AwmVideo.source.type}'`);
+          if (this.AwmVideo.source.type === 'webrtc') {
+            if (this.videoTrackId !== undefined) {
+              let videoTrackIndex = videoTracks.findIndex(item => {
+                const trackid = 'idx' in item ? item.idx : item.trackid;
+                return trackid === this.videoTrackId;
+              });
+              let codec = '?'
+              if (videoTrackIndex >= 0) {
+                codec = videoTracks[videoTrackIndex].codec;
+                videoTracks = videoTracks.filter(item => item.codec === codec);
+              }
+              this.AwmVideo.log(`Monitor: Tracks selection by video track id ${this.videoTrackId} (${codec})`);
+            } else {
+              this.AwmVideo.log(`Monitor: Track selection impossible because the video track is not chosen`);
+              return;
+            }
+          } else {
+            videoTracks = videoTracks.filter(item => item.codec === 'H264');
+          }
+          videoTracks = AwmUtil.array.multiSort(videoTracks, [['bps', -1]]);
+        }
+        this.tracklist = videoTracks;
+        this.AwmVideo.log(`Monitor: Track list ${this.tracklist.map(item => '\'' + item.displayName + '\'').join(', ')}`);
+
+        if (this.videoTrackId !== undefined) {
+          let videoTrackIndex = videoTracks.findIndex(item => {
+            const trackid = 'idx' in item ? item.idx : item.trackid;
+            return trackid === this.videoTrackId;
+          });
+          if (videoTrackIndex >= 0) {
+            this.currentVideoTrackIndex = videoTrackIndex;
+          }
+        }
+      }
+
+      if (!this.hasOwnProperty('result')) {
+        this.AwmVideo.log('Monitor: No result saved, this should not happen!');
+        return;
+      }
+
+      if (this.tracklist.length === 0) {
+        this.AwmVideo.log('Monitor: Video tracks are absent!');
+        this.currentVideoTrackIndex = -1;
+        return;
+      }
+
+      if (this.tracklist.length === 1) {
+        this.currentVideoTrackIndex = 0;
+        return;
+      }
+
+      // Lowest bitrate by default
+      let bitrateIndex = this.tracklist.length - 1;
+
+      if (this.result === this.SWITCH_MODE.INIT) {
+        const bitrateTrackList = this.tracklist
+          .map(item => Math.abs(this.TARGET_BITRATE_ON_STARTUP - item.bps));
+        const minBitrate = Math.min(...bitrateTrackList);
+        bitrateIndex = bitrateTrackList.indexOf(minBitrate);
+      }
+
+      if (this.currentVideoTrackIndex === -1) {
+        this.currentVideoTrackIndex = bitrateIndex;
+      }
+
+      if (this.result === this.SWITCH_MODE.UP) {
+        bitrateIndex = Math.max(this.currentVideoTrackIndex - 1, 0);
+      } else if (this.result === this.SWITCH_MODE.DOWN) {
+        bitrateIndex = Math.min(this.currentVideoTrackIndex + 1, this.tracklist.length - 1);
+      }
+
+      const duration = (Date.now() - this.qualitySwitchTimestamp) * 0.001;
+
+      if (bitrateIndex === this.currentVideoTrackIndex) {
+        if (this.qualitySwitchPreviousMode === this.SWITCH_MODE.UP && duration > this.qualitySwitchUpTimeout) {
+          this.decreaseQualityTimeout();
+        }
+
+        return;
+      }
+
+      if (this.result === this.SWITCH_MODE.DOWN) {
+        // If DOWN -> DOWN - decrease UP timeout if we do not decrease too often
+        if (this.qualitySwitchPreviousMode === this.SWITCH_MODE.DOWN && duration >= this.QUALITY_SWITCH_DOWN_TIMEOUT * 2) {
+          this.decreaseQualityTimeout();
+        }
+
+        // if UP -> DOWN
+        // Increase switching up timeout, if we attempting to often
+        if (this.qualitySwitchPreviousMode === this.SWITCH_MODE.UP) {
+          // Increase switching up timeout, if we attempting to often
+          if (duration <= this.QUALITY_SWITCH_DOWN_TIMEOUT * 2) {
+            let index = this.QUALITY_SWITCH_TIMEOUTS.indexOf(this.qualitySwitchUpTimeout) + 1;
+
+            if (index < this.QUALITY_SWITCH_TIMEOUTS.length) {
+              this.qualitySwitchUpTimeout = this.QUALITY_SWITCH_TIMEOUTS[index];
+              this.AwmVideo.log(`Monitor: Quality switch up timeout => ${this.qualitySwitchUpTimeout}`);
+            }
+          }
+        }
+      }
+
+      this.currentVideoTrackIndex = bitrateIndex;
+      this.qualitySwitchTimestamp = Date.now();
+      this.qualitySwitchPreviousMode = this.result;
+
+      const trackmeta = this.tracklist[this.currentVideoTrackIndex];
+      this.AwmVideo.log(`Monitor: Switching quality ${this.result} [${this.currentVideoTrackIndex}]  (${trackmeta.displayName})`);
+
+      this.AwmVideo.player.api.setTracks({ video: ('idx' in trackmeta ? trackmeta.idx : trackmeta.trackid) });
+
+      this.reset();
+
+      delete this.result;
+    },
+  };
+}
